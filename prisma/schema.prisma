@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Relationship {
+  PARENT
+  SPOUSE
+  SIBLING
+  CHILD
+  RELATIVE
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum School {
+  PRIMARY
+  SECONDARY
+  COLLEGE
+}
+
+enum UserRole {
+  ADMIN
+  ADMISSION
+  BURSARY
+  HOD
+}
+
+enum SemesterType {
+  FIRST 
+  SECOND
+  SUMMER
+}
+
+enum PaymentType  {
+  REGISTRATION
+  DEPARTMENTAL
+}
+
+enum PaymentStatus {
+  NOT_PAID
+  PENDING
+  PAID
+}
+
+model Session {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  startYear   Int
+  endYear     Int
+  @@unique([startYear, endYear, title])
+  
+  // list
+  studentPayments    StudentPayment[]
+  semesters   Semester[]
+  students Student[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(false)
+}
+
+model Program {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  description String?
+  students Student[]
+  courses StudentCourse[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  creditUnit  Int
+  courseCode  String   @unique
+  description String?
+
+  // list
+  students    StudentCourse[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+}
+
+model Semester {
+  id          Int      @id @default(autoincrement())
+  name        SemesterType
+
+  // relationships
+  sessionId   Int
+  session     Session   @relation(fields: [sessionId], references: [id])
+
+  //lists
+  cources StudentCourse[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isActive    Boolean   @default(true)
+
+  @@unique([name, sessionId])
+}
+
+model Payment {
+  id          Int         @id @default(autoincrement())
+  type        PaymentType 
+  amount      Float?
+  description String?
+
+  // relationships
+  payments    StudentPayment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+  @@unique([type, amount, description])
+}
+
+model Student {
+  id             Int            @id @default(autoincrement())
+  firstname      String
+  lastname       String
+  email          String         @unique
+  gender         Gender?
+  password       String?        @default("password")
+  dateOfBirth    DateTime?
+  address        String?
+  utmeScore      Float?
+  isActive       Boolean        @default(true)
+
+  // re
+  programId Int 
+  program Program @relation(fields: [programId], references: [id])
+
+  sessionId Int 
+  sesion Session @relation(fields: [sessionId], references: [id])
+
+
+  // realationships
+  nextOfKin      NextOfKin[]
+  previousSchools PreviousSchool[]
+
+  courses        StudentCourse[]
+  payments       StudentPayment[] 
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  
+}
+
+model NextOfKin {
+  id          Int        @id @default(autoincrement())
+  relationship Relationship @default(PARENT)
+  name        String
+  address     String?
+  phone       String?
+  email       String?
+  studentId   Int
+  student     Student   @relation(fields: [studentId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isActive    Boolean   @default(true)
+}
+
+model PreviousSchool {
+  id         Int      @id @default(autoincrement())
+  name       String?
+  type       School?
+  yearOfGraduation Int?
+  address    String?
+  studentId  Int
+  student    Student @relation(fields: [studentId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isActive   Boolean  @default(true)
+}
+
+model StudentCourse {
+  id         Int      @id @default(autoincrement())
+  testScore  Float?
+  examScore  Float?
+  programId Int
+  program Program @relation(fields: [programId], references: [id])
+  semesterId Int
+  semester Semester @relation(fields: [semesterId], references: [id])
+  studentId  Int
+  student    Student  @relation(fields: [studentId], references: [id])
+  courseId   Int
+  course     Course   @relation(fields: [courseId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isActive   Boolean   @default(true)
+  @@unique([studentId])
+}
+
+
+
+model StudentPayment {
+  id         Int      @id @default(autoincrement())
+  status     PaymentStatus @default(NOT_PAID)
+  paymentCode String
+  verifyCode String
+
+  // relationships 
+  sessionId  Int
+  session    Session @relation(fields: [sessionId], references: [id])
+  paymentId  Int
+  payment    Payment @relation(fields: [paymentId], references: [id])
+  studentId  Int
+  student    Student @relation(fields: [studentId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isActive   Boolean  @default(true)
+  @@unique([studentId]) 
+}
+
+model Admin {
+  id       Int      @id @default(autoincrement())
+  role     UserRole
+  email    String   @unique
+  password String   @default("password")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
