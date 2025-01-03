@@ -41,10 +41,7 @@ enum SemesterType {
   SUMMER
 }
 
-enum PaymentType  {
-  REGISTRATION
-  DEPARTMENTAL
-}
+
 
 enum PaymentStatus {
   NOT_PAID
@@ -63,9 +60,11 @@ model Session {
   studentPayments    StudentPayment[]
   semesters   Semester[]
   students Student[]
+  registeredCourses StudentCourse[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isActive    Boolean  @default(false)
+
 }
 
 model Program {
@@ -113,7 +112,7 @@ model Semester {
 
 model Payment {
   id          Int         @id @default(autoincrement())
-  type        PaymentType 
+  type        String @unique
   amount      Float?
   description String?
 
@@ -130,7 +129,7 @@ model Student {
   id             Int            @id @default(autoincrement())
   firstname      String
   lastname       String
-  email          String         @unique
+  email          String         
   gender         Gender?
   password       String?        @default("password")
   dateOfBirth    DateTime?
@@ -143,7 +142,7 @@ model Student {
   program Program @relation(fields: [programId], references: [id])
 
   sessionId Int 
-  sesion Session @relation(fields: [sessionId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
 
 
   // realationships
@@ -154,6 +153,8 @@ model Student {
   payments       StudentPayment[] 
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@unique([email, programId, sessionId])
 
   
 }
@@ -170,6 +171,7 @@ model NextOfKin {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   isActive    Boolean   @default(true)
+  @@unique([studentId])
 }
 
 model PreviousSchool {
@@ -183,6 +185,7 @@ model PreviousSchool {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   isActive   Boolean  @default(true)
+  @@unique([studentId])
 }
 
 model StudentCourse {
@@ -191,6 +194,8 @@ model StudentCourse {
   examScore  Float?
   programId Int
   program Program @relation(fields: [programId], references: [id])
+  sessionId Int
+  session Session @relation(fields: [sessionId], references: [id])
   semesterId Int
   semester Semester @relation(fields: [semesterId], references: [id])
   studentId  Int
@@ -200,7 +205,9 @@ model StudentCourse {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   isActive   Boolean   @default(true)
-  @@unique([studentId])
+
+  @@unique([studentId, sessionId, semesterId, courseId, programId])
+  
 }
 
 
@@ -209,7 +216,7 @@ model StudentPayment {
   id         Int      @id @default(autoincrement())
   status     PaymentStatus @default(NOT_PAID)
   paymentCode String
-  verifyCode String
+
 
   // relationships 
   sessionId  Int
@@ -221,7 +228,9 @@ model StudentPayment {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   isActive   Boolean  @default(true)
-  @@unique([studentId]) 
+
+  @@unique([studentId, sessionId, paymentId])
+
 }
 
 model Admin {

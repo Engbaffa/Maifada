@@ -1,73 +1,59 @@
-// admin updates payment
 import bcrypt from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+// ✅ Get All Payments
 const getAll = async (req, res) => {
   try {
-    const all = await prisma.studentPayment.findMany();
-    res.json(all);
-  } catch (error) {}
-};
-const getAllByStudent = async (req, res) => {
-  const { studentId } = req.body;
-  if (!studentId) {
-    return res.status(400).json({ message: "Studentid required" });
-  }
-  try {
-    const all = await prisma.studentPayment.findMany({
-      where: {
-        studentId: parseInt(studentId),
+    const allPayments = await prisma.studentPayment.findMany({
+      include: {
+        student: true,
+        session: true,
+        payment: true,
       },
     });
-    res.json(all);
-  } catch (error) {}
+    res.status(200).json(allPayments);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching payments.", details: error.message });
+  }
 };
-const createStudentPayment = async (req, res) => {
-  const { paymentId } = req.params;
-  const { paymentCode, studentId, sessionId } = req.body;
 
-  if (!paymentId || !paymentCode || !studentId || !sessionId) {
+// ✅ Create a New Student Payment
+const createStudentPayment = async (req, res) => {
+  const { id } = req.params;
+  const { paymentCode, paymentId, sessionId } = req.body;
+
+  if (!paymentCode || !paymentId || !sessionId) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
   try {
-    // Verify sessionId
-    const session = await prisma.session.findUnique({
+    // Check for duplicate payment
+    const duplicate = await prisma.studentPayment.findUnique({
       where: {
-        id: parseInt(sessionId),
+        studentId_sessionId_paymentId: {
+          studentId: parseInt(id),
+          sessionId: parseInt(sessionId),
+          paymentId: parseInt(paymentId),
+        },
       },
     });
-    if (!session || !session.isActive) {
+
+    if (duplicate) {
       return res
         .status(400)
-        .json({ message: "Session does not exist or is inactive." });
+        .json({ message: "Payment has already been made." });
     }
 
-    // Verify paymentId
-    const payment = await prisma.studentPayment.findUnique({
-      where: {
-        id: parseInt(paymentId),
-      },
-    });
-    if (!payment || !payment.isActive) {
-      return res
-        .status(400)
-        .json({ message: "Payment does not exist or is inactive." });
-    }
-
-    // Verify studentId
-    const studentExists = await prisma.student.findUnique({
-      where: { id: parseInt(studentId) },
-    });
-    if (!studentExists) {
-      return res.status(400).json({ message: "Student does not exist." });
-    }
-
+    // Hash the payment code
     const hashedCode = await bcrypt.hash(paymentCode, 10);
-    const updatedPayment = await prisma.studentPayment.create({
+
+    // Create a new payment
+    const newPayment = await prisma.studentPayment.create({
       data: {
-        studentId: parseInt(studentId),
+        studentId: parseInt(id),
         paymentId: parseInt(paymentId),
         sessionId: parseInt(sessionId),
         paymentCode: hashedCode,
@@ -75,67 +61,41 @@ const createStudentPayment = async (req, res) => {
       },
     });
 
-    return res.status(200).json({
-      message: "Payment updated successfully.",
-      payment: updatedPayment,
-    });
+    res
+      .status(201)
+      .json({ message: "Payment created successfully.", payment: newPayment });
   } catch (error) {
-    return res
+    res
       .status(500)
-      .json({ error: "Error updating payment.", details: error.message });
+      .json({ error: "Error creating payment.", details: error.message });
   }
 };
 
+// ✅ Verify Payment
 const paymentVerification = async (req, res) => {
-  const { verifyPayment, studentId, paymentId, sessionId } = req.body;
-  if (!verifyPayment || !studentId || !paymentId || !sessionId) {
+  const { id } = req.params;
+  const { verifyPayment, paymentId, sessionId } = req.body;
+
+  if (!verifyPayment || !paymentId || !sessionId) {
     return res.status(400).json({ message: "All fields are required." });
   }
+
   try {
-    const studentExists = await prisma.student.findUnique({
+    // Find pending payment
+    const studentPayment = await prisma.studentPayment.findFirst({
       where: {
-        id: parseInt(studentId),
+        studentId: parseInt(id),
+        paymentId: parseInt(paymentId),
+        sessionId: parseInt(sessionId),
+        status: "PENDING",
       },
     });
-    if (!studentExists || !studentExists.isActive) {
-      return res
-        .status(400)
-        .json({ message: "Student does not exist or is inactive." });
-    }
-    const payment = await prisma.payment.findUnique({
-      where: {
-        id: parseInt(paymentId),
-      },
-    });
-    if (!payment) {
-      return res.status(400).json({ message: "Payment does not exist." });
-    }
-    const session = await prisma.session.findUnique({
-      where: {
-        id: parseInt(sessionId),
-      },
-    });
-    if (!session) {
-      return res.status(400).json({ message: "Session does not exist." });
-    }
 
-    // Get student payment
-    const studentPayment = await prisma.studentPayment.findUnique({
-      where: {
-        studentId_paymentId_sessionId: {
-          studentId: parseInt(studentId),
-          paymentId: parseInt(paymentId),
-          sessionId: parseInt(sessionId),
-          status: "PENDING",
-        },
-      },
-    });
     if (!studentPayment) {
-      return res
-        .status(400)
-        .json({ message: "Student payment does not exist." });
+      return res.status(404).json({ message: "No pending payment found." });
     }
 
+    // Verify the payment code
     const verified = await bcrypt.compare(
       verifyPayment,
       studentPayment.paymentCode
@@ -144,335 +104,168 @@ const paymentVerification = async (req, res) => {
       return res.status(400).json({ message: "Invalid payment code." });
     }
 
+    // Update payment status to PAID
     const updatedPayment = await prisma.studentPayment.update({
-      where: {
-        studentId_paymentId_sessionId: {
-          studentId: parseInt(studentId),
-          paymentId: parseInt(paymentId),
-          sessionId: parseInt(sessionId),
-        },
-      },
-      data: {
-        status: "PAID",
-      },
+      where: { id: studentPayment.id },
+      data: { status: "PAID" },
     });
 
-    return res.status(200).json({
-      message: "Payment verified successfully.",
-      payment: updatedPayment,
-    });
+    res
+      .status(200)
+      .json({
+        message: "Payment verified successfully.",
+        payment: updatedPayment,
+      });
   } catch (error) {
-    return res
+    res
       .status(500)
       .json({ error: "Error verifying payment.", details: error.message });
   }
 };
 
+// ✅ Get All Paid Payments
 const getAllPaid = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PAID",
+      where: { status: "PAID" },
+      include: {
+        student: true,
+        session: true,
+        payment: true,
       },
     });
+
     if (!payments.length) {
-      return res.status(400).json({ message: "No payments found." });
+      return res.status(404).json({ message: "No paid payments found." });
     }
+
     res.status(200).json(payments);
   } catch (error) {
-    return res
+    res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({ error: "Error fetching paid payments.", details: error.message });
   }
 };
 
-const getAllPaidBySession = async (req, res) => {
-  const { sessionId } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PAID",
-        sessionId: parseInt(sessionId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No payments found for this session." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllPaidByProgram = async (req, res) => {
-  const { studentId } = req.body;
-  if (!studentId) {
-    return res.status(400).json({ message: "student ID is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PAID",
-        studentId: parseInt(studentId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No payments found for this program." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllPaidBySessionByStudents = async (req, res) => {
-  const { sessionId, studentId } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required." });
-  }
-  if (!studentId) {
-    return res.status(400).json({ message: "Program ID is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PAID",
-        studentId: parseInt(studentId),
-        sessionId: parseInt(sessionId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No payments found for this session and program." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
+// ✅ Get All Pending Payments
 const getAllPending = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PENDING",
+      where: { status: "PENDING" },
+      include: {
+        student: true,
+        session: true,
+        payment: true,
       },
     });
+
     if (!payments.length) {
-      return res.status(400).json({ message: "No pending payments found." });
+      return res.status(404).json({ message: "No pending payments found." });
     }
+
     res.status(200).json(payments);
   } catch (error) {
-    return res
+    res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllPendingBySession = async (req, res) => {
-  const { sessionId } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PENDING",
-        sessionId: parseInt(sessionId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No pending payments found for this session." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllPendingByProgram = async (req, res) => {
-  const { studentId } = req.body;
-  if (!studentId) {
-    return res.status(400).json({ message: "Program ID is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PENDING",
-        studentId: parseInt(studentId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No pending payments found for this program." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllPendingByStudentByProgram = async (req, res) => {
-  const { sessionId, studentId } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required." });
-  }
-  if (!studentId) {
-    return res.status(400).json({ message: "studentId is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "PENDING",
-        studentId: parseInt(studentId),
-        sessionId: parseInt(sessionId),
-      },
-    });
-    if (!payments.length) {
-      return res.status(400).json({
-        message: "No pending payments found for this session and program.",
+      .json({
+        error: "Error fetching pending payments.",
+        details: error.message,
       });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
   }
 };
 
+// ✅ Get All Not Paid Payments
 const getAllNotPaid = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "NOT_PAID",
+      where: { status: "NOT_PAID" },
+      include: {
+        student: true,
+        session: true,
+        payment: true,
       },
     });
+
     if (!payments.length) {
-      return res.status(400).json({ message: "No unpaid payments found." });
+      return res.status(404).json({ message: "No unpaid payments found." });
     }
+
     res.status(200).json(payments);
   } catch (error) {
-    return res
+    res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllNotPaidBySession = async (req, res) => {
-  const { sessionId } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "NOT_PAID",
-        sessionId: parseInt(sessionId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No unpaid payments found for this session." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllNotPaidByProgram = async (req, res) => {
-  const { studentId } = req.body;
-  if (!studentId) {
-    return res.status(400).json({ message: "studentId  is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "NOT_PAID",
-        programId: parseInt(studentId),
-      },
-    });
-    if (!payments.length) {
-      return res
-        .status(400)
-        .json({ message: "No unpaid payments found for this program." });
-    }
-    res.status(200).json(payments);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
-  }
-};
-
-const getAllNotPaidBySessionByprogram = async (req, res) => {
-  const { sessionId, programId } = req.body;
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required." });
-  }
-  if (!studentId) {
-    return res.status(400).json({ message: "studentId  is required." });
-  }
-  try {
-    const payments = await prisma.studentPayment.findMany({
-      where: {
-        status: "NOT_PAID",
-        programId: parseInt(programId),
-        sessionId: parseInt(sessionId),
-      },
-    });
-    if (!payments.length) {
-      return res.status(400).json({
-        message: "No unpaid payments found for this session and program.",
+      .json({
+        error: "Error fetching unpaid payments.",
+        details: error.message,
       });
+  }
+};
+
+// ✅ Get Payment by Student
+const getPaymentByStudent = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const payments = await prisma.studentPayment.findMany({
+      where: { studentId: parseInt(id) },
+      include: {
+        session: true,
+        payment: true,
+      },
+    });
+
+    if (!payments.length) {
+      return res
+        .status(404)
+        .json({ message: "No payments found for the student." });
     }
+
     res.status(200).json(payments);
   } catch (error) {
-    return res
+    res
       .status(500)
       .json({ error: "Error fetching payments.", details: error.message });
   }
 };
 
+// ✅ Delete a Student Payment
+const deleteStudentPayment = async (req, res) => {
+  const { id } = req.params;
+  const { paymentId, sessionId } = req.body;
+
+  if (!paymentId || !sessionId) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  try {
+    const deletedPayment = await prisma.studentPayment.deleteMany({
+      where: {
+        studentId: parseInt(id),
+        sessionId: parseInt(sessionId),
+        paymentId: parseInt(paymentId),
+      },
+    });
+
+    if (deletedPayment.count === 0) {
+      return res.status(404).json({ message: "Payment not found." });
+    }
+
+    res.status(200).json({ message: "Payment deleted successfully." });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error deleting payment.", details: error.message });
+  }
+};
+
+// ✅ Export the Routes
 export {
-  createStudentPayment,
-  paymentVerification,
+  createStudentPayment, // C
+  paymentVerification, // U
   getAllPaid,
-  getAllPaidBySession,
-  getAllPaidByProgram,
-  getAllPaidBySessionByStudents,
   getAllPending,
-  getAllPendingBySession,
-  getAllPendingByProgram,
-  getAllPendingByStudentByProgram,
   getAllNotPaid,
-  getAllNotPaidBySession,
-  getAllNotPaidByProgram,
-  getAllNotPaidBySessionByprogram,
   getAll,
+  deleteStudentPayment,
+  getPaymentByStudent,
 };

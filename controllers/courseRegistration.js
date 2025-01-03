@@ -1,155 +1,189 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
+// ✅ Register a Course for a Student
 const registerCourse = async (req, res) => {
-  const { programId, studentId, semesterId } = req.params;
-  const { courseId } = req.body;
-  if (!studentId || !courseId || !programId || !semesterId) {
-    return res.status(400).json({ message: "All fields are mandatory" });
+  const { id } = req.params;
+  const { programId, courseId, semesterId, sessionId } = req.body;
+
+  if (!courseId || !programId || !semesterId || !sessionId) {
+    return res.status(400).json({ message: "All fields are mandatory." });
   }
+
   try {
-    const studentExists = await prisma.student.findUnique({
+    // Check if the course is already registered
+    const existingCourse = await prisma.studentCourse.findUnique({
       where: {
-        id: parseInt(studentId),
+        studentId_sessionId_semesterId_courseId_programId: {
+          studentId: parseInt(id),
+          programId: parseInt(programId),
+          semesterId: parseInt(semesterId),
+          sessionId: parseInt(sessionId),
+          courseId: parseInt(courseId),
+        },
       },
     });
-    if (!studentExists || !studentExists.isActive) {
-      return res.status(400).json({ message: "Student does not exist" });
-    }
-    const courseExists = await prisma.course.findUnique({
-      where: {
-        id: parseInt(courseId),
-      },
-    });
-    if (!courseExists || !courseExists.isActive) {
-      return res.status(400).json({ message: "Course does not exist" });
-    }
-    const programExists = await prisma.program.findUnique({
-      where: {
-        id: parseInt(programId),
-      },
-    });
-    if (!programExists || !programExists.isActive) {
-      return res.status(400).json({ message: "Program does not exist" });
-    }
-    const semesterExists = await prisma.semester.findUnique({
-      where: {
-        id: parseInt(semesterId),
-      },
-    });
-    if (!semesterExists || !semesterExists.isActive) {
-      return res.status(400).json({ message: "Semester does not exist" });
-    }
-    const duplicate = await prisma.studentCourse.findUnique({
-      where: {
-        studentId: parseInt(studentId),
-        courseId: parseInt(courseId),
-        semesterId: parseInt(semesterId),
-      },
-    });
-    if (duplicate) {
-      return res.status(400).json({ message: "Course already registered" });
+
+    if (existingCourse) {
+      return res.status(400).json({ message: "Course already registered." });
     }
 
+    // Register the course
     const newCourse = await prisma.studentCourse.create({
       data: {
-        studentId: parseInt(studentId),
+        studentId: parseInt(id),
         courseId: parseInt(courseId),
         programId: parseInt(programId),
+        semesterId: parseInt(semesterId),
+        sessionId: parseInt(sessionId),
       },
     });
 
     res.status(201).json(newCourse);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
+    });
   }
 };
 
-const getAllStudentsByCourse = async (req, res) => {
-  const { studentId } = req.params;
-  if (!studentId) {
-    return res.status(400).json({ message: "All fields are required" });
+// ✅ Get All Courses Registered by a Student
+const getCourseByStudent = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const registeredCourses = await prisma.studentCourse.findMany({
+      where: {
+        studentId: parseInt(id),
+      },
+      include: {
+        course: true,
+        program: true,
+        semester: true,
+        session: true,
+      },
+    });
+
+    if (registeredCourses.length === 0) {
+      return res.status(400).json({ message: "Not registered to any course." });
+    }
+
+    return res.status(200).json(registeredCourses);
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
+    });
   }
-  try {
-    const studentExists = await prisma.student.findUnique({
-      where: {
-        id: parseInt(studentId),
-      },
-    });
-    if (!studentExists || !studentExists.isActive) {
-      return res.status(400).json({ message: "Student no dey" });
-    }
-    const studentCourses = await prisma.registerCourse({
-      where: {
-        studentId: parseInt(studentId),
-      },
-    });
-    if (!studentCourses || !studentCourses.isActive) {
-      return res.status(400).json({ message: "student no dey" });
-    }
-    return res.status(200).json(studentCourses);
-  } catch (error) {}
 };
-const getAll = async (req, res) => {
+
+// ✅ Get All Registered Courses (Admin View)
+const getAllStudentCourse = async (req, res) => {
   try {
-    const registered = await prisma.registerCourse({
-      where: {
-        isActive: true,
+    const registeredCourses = await prisma.studentCourse.findMany({
+      include: {
+        student: true,
+        course: true,
+        program: true,
+        semester: true,
+        session: true,
       },
     });
-    if (!registered || !registered.isActive) {
-      return res.status(400).json({ message: "student no dey" });
-    }
-    return res.status(200).json(registered);
-  } catch (error) {}
+
+    return res.status(200).json(registeredCourses);
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
 };
+
+// ✅ Drop a Registered Course
 const dropCourse = async (req, res) => {
-  const { courseId } = req.params;
-  const { studentId } = req.body;
-  if (!studentId || !courseId) {
-    return res.status(400).json({ message: "All fields are mandatory" });
+  const { id } = req.params;
+  const { courseId, sessionId, semesterId, programId } = req.body;
+
+  if (!courseId || !sessionId || !semesterId || !programId) {
+    return res.status(400).json({ message: "All fields are mandatory." });
   }
+
   try {
-    // cheak is course exists
-    const courseExists = await prisma.course.findUnique({
+    const droppedCourse = await prisma.studentCourse.delete({
       where: {
-        id: parseInt(courseId),
+        studentId_sessionId_semesterId_courseId_programId: {
+          studentId: parseInt(id),
+          courseId: parseInt(courseId),
+          sessionId: parseInt(sessionId),
+          semesterId: parseInt(semesterId),
+          programId: parseInt(programId),
+        },
+        include: {
+          student: true,
+          courseId: true,
+        },
       },
     });
-    if (!courseExists || !courseExists.isActive) {
-      return res.status(400).jsno({ message: "Course no dey" });
-    }
-    const studentExists = await prisma.student.findUnique({
-      where: {
-        id: parseInt(studentId),
-      },
-    });
-    if (!studentExists || !studentExists.isActive) {
-      return res.status(400).jsno({ message: "Course no dey" });
-    }
 
-    const registered = await prisma.registerCourse.findUnique({
-      where: {
-        studentId: parseInt(studentId),
-      },
+    return res
+      .status(200)
+      .json({ message: "Course dropped successfully.", droppedCourse });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
     });
-    if (!registered || !registered.isActive) {
-      return res.status(400).json({ message: "NOT regsitered to course" });
-    }
+  }
+};
 
-    const dropCourse = await prisma.studentCourse.update({
+// ✅ Update Student's Scores
+const updateScore = async (req, res) => {
+  const { id } = req.params;
+  const { courseId, examScore, testScore, semesterId, sessionId, programId } =
+    req.body;
+
+  if (!courseId || !semesterId || !sessionId || !programId) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  // Check if at least one score is provided
+  if (testScore === undefined && examScore === undefined) {
+    return res.status(400).json({
+      message: "At least one score (testScore or examScore) is required.",
+    });
+  }
+
+  try {
+    const updatedCourse = await prisma.studentCourse.update({
       where: {
-        studentId: parseInt(studentId),
+        studentId_sessionId_semesterId_courseId_programId: {
+          studentId: parseInt(id),
+          courseId: parseInt(courseId),
+          sessionId: parseInt(sessionId),
+          semesterId: parseInt(semesterId),
+          programId: parseInt(programId),
+        },
       },
       data: {
-        isActive: false,
+        examScore: examScore !== undefined ? examScore : undefined,
+        testScore: testScore !== undefined ? testScore : undefined,
       },
     });
-    res.status(200).json({ message: "Course dropped succesfully", dropCourse });
-  } catch (error) {}
+
+    return res.status(200).json(updatedCourse);
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
 };
 
-export { registerCourse, getAll, getAllStudentsByCourse, dropCourse };
+export {
+  registerCourse,
+  getCourseByStudent,
+  getAllStudentCourse,
+  dropCourse,
+  updateScore,
+};

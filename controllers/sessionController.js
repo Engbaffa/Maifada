@@ -44,19 +44,13 @@ const getSessions = async (req, res) => {
   try {
     const sessions = await prisma.session.findMany({
       where: { isActive: true },
+      include: {
+        semesters: true,
+        registeredCourses: true,
+        students: true,
+        studentPayments: true,
+      },
     });
-    res.status(200).json(sessions);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching sessions", error: error.message });
-  }
-};
-
-// Get all sessions (including inactive)
-const getAllSessions = async (req, res) => {
-  try {
-    const sessions = await prisma.session.findMany();
     res.status(200).json(sessions);
   } catch (error) {
     res
@@ -76,6 +70,12 @@ const getSessionById = async (req, res) => {
   try {
     const session = await prisma.session.findUnique({
       where: { id: Number(id) },
+      include: {
+        semesters: true,
+        registeredCourses: true,
+        students: true,
+        studentPayments: true,
+      },
     });
 
     if (!session || !session.isActive) {
@@ -137,15 +137,14 @@ const deleteSession = async (req, res) => {
       where: { id: Number(id) },
     });
 
-    if (!session || !session.isActive) {
+    if (!session) {
       return res
         .status(404)
         .json({ message: "Session not found or already inactive" });
     }
 
-    const updatedSession = await prisma.session.update({
+    const updatedSession = await prisma.session.delete({
       where: { id: Number(id) },
-      data: { isActive: false },
     });
 
     res.status(200).json({ message: "Session deactivated", updatedSession });
@@ -159,7 +158,6 @@ const deleteSession = async (req, res) => {
 export {
   createSession,
   getSessions,
-  getAllSessions,
   getSessionById,
   updateSession,
   deleteSession,

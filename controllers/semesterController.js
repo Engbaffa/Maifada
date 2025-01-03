@@ -35,6 +35,10 @@ const getSemesters = async (req, res) => {
   try {
     const semesters = await prisma.semester.findMany({
       where: { isActive: true },
+      include: {
+        session: true,
+        cources: true,
+      },
     });
     res.status(200).json(semesters);
   } catch (error) {
@@ -54,6 +58,10 @@ const getSemesterById = async (req, res) => {
   try {
     const semester = await prisma.semester.findUnique({
       where: { id: parseInt(id) },
+      include: {
+        session: true,
+        cources: true,
+      },
     });
 
     if (!semester || !semester.isActive) {
@@ -73,6 +81,9 @@ const getSemesterById = async (req, res) => {
 const updateSemester = async (req, res) => {
   const { id } = req.params;
   const { sessionId, name } = req.body;
+  if (!name && !sessionId) {
+    return res.status(400).json({ message: "At least one fields required" });
+  }
 
   if (!id) {
     return res.status(400).json({ message: "Semester ID is required" });
@@ -112,15 +123,14 @@ const deleteSemester = async (req, res) => {
       where: { id: parseInt(id) },
     });
 
-    if (!semester || !semester.isActive) {
+    if (!semester) {
       return res
         .status(404)
         .json({ message: "Semester not found or already inactive" });
     }
 
-    const updatedSemester = await prisma.semester.update({
+    const updatedSemester = await prisma.semester.delete({
       where: { id: parseInt(id) },
-      data: { isActive: false },
     });
 
     res.status(200).json({ message: "Semester deactivated", updatedSemester });
@@ -131,73 +141,10 @@ const deleteSemester = async (req, res) => {
   }
 };
 
-const restoreSemester = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) {
-    return res.status(400).json({ message: "Semester ID is required" });
-  }
-
-  try {
-    const semester = await prisma.semester.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!semester) {
-      return res.status(404).json({ message: "Semester not found" });
-    }
-
-    if (semester.isActive) {
-      return res.status(400).json({ message: "Semester is already active" });
-    }
-
-    const updatedSemester = await prisma.semester.update({
-      where: { id: parseInt(id) },
-      data: { isActive: true },
-    });
-
-    res.status(200).json({ message: "Semester restored", updatedSemester });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error restoring semester", error: error.message });
-  }
-};
-
-const getSemestersBySession = async (req, res) => {
-  const { sessionId } = req.params;
-
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required" });
-  }
-
-  try {
-    const session = await prisma.session.findUnique({
-      where: { id: parseInt(sessionId) },
-    });
-
-    if (!session || !session.isActive) {
-      return res.status(404).json({ message: "Session not found or inactive" });
-    }
-
-    const semesters = await prisma.semester.findMany({
-      where: { sessionId: parseInt(sessionId), isActive: true },
-    });
-
-    res.status(200).json(semesters);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching semesters", error: error.message });
-  }
-};
-
 export {
   createSemester,
   getSemesters,
   getSemesterById,
   updateSemester,
   deleteSemester,
-  restoreSemester,
-  getSemestersBySession,
 };

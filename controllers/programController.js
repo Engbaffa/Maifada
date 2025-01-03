@@ -14,16 +14,6 @@ const createProgram = async (req, res) => {
   }
 
   try {
-    const duplicate = await prisma.program.findUnique({
-      where: {
-        title,
-      },
-    });
-
-    if (duplicate) {
-      res.status(400).json({ message: "Session already exists" });
-    }
-
     const newProgram = await prisma.program.create({
       data: {
         title,
@@ -45,20 +35,11 @@ const getPrograms = async (req, res) => {
   try {
     const programs = await prisma.program.findMany({
       where: { isActive: true },
+      include: {
+        students: true,
+      },
     });
 
-    res.status(200).json(programs);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching programs", error: error.message });
-  }
-};
-
-// Get all programs (both active and inactive)
-const getAllPrograms = async (req, res) => {
-  try {
-    const programs = await prisma.program.findMany();
     res.status(200).json(programs);
   } catch (error) {
     res
@@ -78,6 +59,9 @@ const getProgramById = async (req, res) => {
   try {
     const program = await prisma.program.findUnique({
       where: { id: parseInt(id) },
+      include: {
+        students: true,
+      },
     });
 
     if (!program || !program.isActive) {
@@ -92,39 +76,10 @@ const getProgramById = async (req, res) => {
   }
 };
 
-// Get programs by session (only active)
-const getProgramsBySession = async (req, res) => {
-  const { sessionId } = req.params;
-
-  if (!sessionId) {
-    return res.status(400).json({ message: "Session ID is required" });
-  }
-
-  try {
-    const sessionExists = await prisma.session.findUnique({
-      where: { id: parseInt(sessionId) },
-    });
-
-    if (!sessionExists || !sessionExists.isActive) {
-      return res.status(404).json({ message: "Session not found or inactive" });
-    }
-
-    const programs = await prisma.program.findMany({
-      where: { sessionId: parseInt(sessionId), isActive: true },
-    });
-
-    res.status(200).json(programs);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching programs", error: error.message });
-  }
-};
-
 // Update a program (only if active)
 const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, fee } = req.body;
+  const { title, description } = req.body;
 
   if (!id) {
     return res.status(400).json({ message: "Program ID is required" });
@@ -141,7 +96,7 @@ const updateProgram = async (req, res) => {
 
     const updatedProgram = await prisma.program.update({
       where: { id: parseInt(id) },
-      data: { title, description, fee },
+      data: { title, description },
     });
 
     res.status(200).json({ message: "Program updated", updatedProgram });
@@ -152,7 +107,6 @@ const updateProgram = async (req, res) => {
   }
 };
 
-// "Soft delete" a program by setting isActive to false
 const deleteProgram = async (req, res) => {
   const { id } = req.params;
 
@@ -171,9 +125,8 @@ const deleteProgram = async (req, res) => {
         .json({ message: "Program not found or already inactive" });
     }
 
-    const updatedProgram = await prisma.program.update({
+    const updatedProgram = await prisma.program.delete({
       where: { id: parseInt(id) },
-      data: { isActive: false },
     });
 
     res.status(200).json({ message: "Program deactivated", updatedProgram });
@@ -184,47 +137,10 @@ const deleteProgram = async (req, res) => {
   }
 };
 
-// Restore a program (reactivate it)
-const restoreProgram = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) {
-    return res.status(400).json({ message: "Program ID is required" });
-  }
-
-  try {
-    const program = await prisma.program.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!program) {
-      return res.status(404).json({ message: "Program not found" });
-    }
-
-    if (program.isActive) {
-      return res.status(400).json({ message: "Program is already active" });
-    }
-
-    const updatedProgram = await prisma.program.update({
-      where: { id: parseInt(id) },
-      data: { isActive: true },
-    });
-
-    res.status(200).json({ message: "Program restored", updatedProgram });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error restoring program", error: error.message });
-  }
-};
-
 export {
   createProgram,
   getPrograms,
-  getAllPrograms,
   getProgramById,
-  getProgramsBySession,
   updateProgram,
   deleteProgram,
-  restoreProgram,
 };
