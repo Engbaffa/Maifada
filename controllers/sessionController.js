@@ -2,6 +2,38 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Get all sessions (only active)
+const getEverythingSessions = async (req, res) => {
+  try {
+    const sessions = await prisma.session.findMany({
+      where: { isActive: true },
+      include: {
+        registeredCourses: true,
+        students: true,
+        studentPayments: true,
+      },
+    });
+    res.status(200).json(sessions);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching sessions", error: error.message });
+  }
+};
+// Get all sessions (only active)
+const getSessions = async (req, res) => {
+  try {
+    const sessions = await prisma.session.findMany({
+      where: { isActive: true },
+    });
+    res.status(200).json(sessions);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching sessions", error: error.message });
+  }
+};
+
 // Create a new session
 const createSession = async (req, res) => {
   const { title, startYear, endYear } = req.body;
@@ -39,26 +71,6 @@ const createSession = async (req, res) => {
   }
 };
 
-// Get all sessions (only active)
-const getSessions = async (req, res) => {
-  try {
-    const sessions = await prisma.session.findMany({
-      where: { isActive: true },
-      include: {
-        semesters: true,
-        registeredCourses: true,
-        students: true,
-        studentPayments: true,
-      },
-    });
-    res.status(200).json(sessions);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching sessions", error: error.message });
-  }
-};
-
 // Get session by ID (only if active)
 const getSessionById = async (req, res) => {
   const { id } = req.params;
@@ -70,12 +82,6 @@ const getSessionById = async (req, res) => {
   try {
     const session = await prisma.session.findUnique({
       where: { id: Number(id) },
-      include: {
-        semesters: true,
-        registeredCourses: true,
-        students: true,
-        studentPayments: true,
-      },
     });
 
     if (!session || !session.isActive) {
@@ -161,4 +167,5 @@ export {
   getSessionById,
   updateSession,
   deleteSession,
+  getEverythingSessions,
 };

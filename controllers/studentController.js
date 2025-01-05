@@ -1,6 +1,27 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+const getEverythingStudents = async (req, res) => {
+  try {
+    const students = await prisma.student.findMany({
+      where: { isActive: true },
+      include: {
+        session: true,
+        program: true, // If program is part of the student
+        nextOfKin: true, // If there's a next of kin relationship
+        previousSchools: true, // If there are previous schools linked
+        courses: true, // If courses are directly related
+        payments: true, // If payments are part of the student
+      },
+    });
+
+    res.status(200).json(students);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching students", error: error.message });
+  }
+};
 const loginStudent = async (req, res) => {
   try {
     // Implement login logic here
@@ -54,14 +75,6 @@ const getStudentById = async (req, res) => {
   try {
     const student = await prisma.student.findUnique({
       where: { id: parseInt(id), isActive: true },
-      include: {
-        session: true,
-        program: true, // If program is part of the student
-        nextOfKin: true, // If there's a next of kin relationship
-        previousSchools: true, // If there are previous schools linked
-        courses: true, // If courses are directly related
-        payments: true, // If payments are part of the student
-      },
     });
     if (!student) {
       return res.status(404).json({ message: "Student not found or inactive" });
@@ -78,14 +91,6 @@ const getStudents = async (req, res) => {
   try {
     const students = await prisma.student.findMany({
       where: { isActive: true },
-      include: {
-        session: true,
-        program: true, // If program is part of the student
-        nextOfKin: true, // If there's a next of kin relationship
-        previousSchools: true, // If there are previous schools linked
-        courses: true, // If courses are directly related
-        payments: true, // If payments are part of the student
-      },
     });
 
     res.status(200).json(students);
@@ -242,4 +247,5 @@ export {
   updateUtmeScore,
   updateStudentPassword,
   updateStudent,
+  getEverythingStudents,
 };

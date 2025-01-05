@@ -1,6 +1,26 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+const getEverythingAllStudentCourse = async (req, res) => {
+  try {
+    const registeredCourses = await prisma.studentCourse.findMany({
+      include: {
+        student: true,
+        course: true,
+        program: true,
+        semester: true,
+        session: true,
+      },
+    });
+
+    return res.status(200).json(registeredCourses);
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
 // ✅ Register a Course for a Student
 const registerCourse = async (req, res) => {
   const { id } = req.params;
@@ -57,12 +77,6 @@ const getCourseByStudent = async (req, res) => {
       where: {
         studentId: parseInt(id),
       },
-      include: {
-        course: true,
-        program: true,
-        semester: true,
-        session: true,
-      },
     });
 
     if (registeredCourses.length === 0) {
@@ -81,15 +95,7 @@ const getCourseByStudent = async (req, res) => {
 // ✅ Get All Registered Courses (Admin View)
 const getAllStudentCourse = async (req, res) => {
   try {
-    const registeredCourses = await prisma.studentCourse.findMany({
-      include: {
-        student: true,
-        course: true,
-        program: true,
-        semester: true,
-        session: true,
-      },
-    });
+    const registeredCourses = await prisma.studentCourse.findMany({});
 
     return res.status(200).json(registeredCourses);
   } catch (error) {
@@ -186,4 +192,5 @@ export {
   getAllStudentCourse,
   dropCourse,
   updateScore,
+  getEverythingAllStudentCourse,
 };

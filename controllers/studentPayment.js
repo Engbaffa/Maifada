@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // ✅ Get All Payments
-const getAll = async (req, res) => {
+const getEverythingStudentPayments = async (req, res) => {
   try {
     const allPayments = await prisma.studentPayment.findMany({
       include: {
@@ -12,6 +12,17 @@ const getAll = async (req, res) => {
         payment: true,
       },
     });
+    res.status(200).json(allPayments);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error fetching payments.", details: error.message });
+  }
+};
+// ✅ Get All Payments
+const getAll = async (req, res) => {
+  try {
+    const allPayments = await prisma.studentPayment.findMany({});
     res.status(200).json(allPayments);
   } catch (error) {
     res
@@ -110,12 +121,10 @@ const paymentVerification = async (req, res) => {
       data: { status: "PAID" },
     });
 
-    res
-      .status(200)
-      .json({
-        message: "Payment verified successfully.",
-        payment: updatedPayment,
-      });
+    res.status(200).json({
+      message: "Payment verified successfully.",
+      payment: updatedPayment,
+    });
   } catch (error) {
     res
       .status(500)
@@ -128,11 +137,6 @@ const getAllPaid = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
       where: { status: "PAID" },
-      include: {
-        student: true,
-        session: true,
-        payment: true,
-      },
     });
 
     if (!payments.length) {
@@ -152,11 +156,6 @@ const getAllPending = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
       where: { status: "PENDING" },
-      include: {
-        student: true,
-        session: true,
-        payment: true,
-      },
     });
 
     if (!payments.length) {
@@ -165,12 +164,10 @@ const getAllPending = async (req, res) => {
 
     res.status(200).json(payments);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Error fetching pending payments.",
-        details: error.message,
-      });
+    res.status(500).json({
+      error: "Error fetching pending payments.",
+      details: error.message,
+    });
   }
 };
 
@@ -179,11 +176,6 @@ const getAllNotPaid = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
       where: { status: "NOT_PAID" },
-      include: {
-        student: true,
-        session: true,
-        payment: true,
-      },
     });
 
     if (!payments.length) {
@@ -192,12 +184,10 @@ const getAllNotPaid = async (req, res) => {
 
     res.status(200).json(payments);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Error fetching unpaid payments.",
-        details: error.message,
-      });
+    res.status(500).json({
+      error: "Error fetching unpaid payments.",
+      details: error.message,
+    });
   }
 };
 
@@ -208,10 +198,6 @@ const getPaymentByStudent = async (req, res) => {
   try {
     const payments = await prisma.studentPayment.findMany({
       where: { studentId: parseInt(id) },
-      include: {
-        session: true,
-        payment: true,
-      },
     });
 
     if (!payments.length) {
@@ -268,4 +254,5 @@ export {
   getAll,
   deleteStudentPayment,
   getPaymentByStudent,
+  getEverythingStudentPayments,
 };

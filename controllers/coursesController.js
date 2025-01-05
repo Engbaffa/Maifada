@@ -2,6 +2,20 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const getEverythingCourses = async (req, res) => {
+  try {
+    const courses = await prisma.course.findMany({
+      include: {
+        students: true,
+      },
+    });
+    res.status(200).json(courses);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching courses", error: error.message });
+  }
+};
 const createCourse = async (req, res) => {
   const { title, creditUnit, courseCode, description } = req.body;
 
@@ -35,11 +49,7 @@ const createCourse = async (req, res) => {
 
 const getCourses = async (req, res) => {
   try {
-    const courses = await prisma.course.findMany({
-      include: {
-        students: true,
-      },
-    });
+    const courses = await prisma.course.findMany({});
     res.status(200).json(courses);
   } catch (error) {
     res
@@ -59,9 +69,6 @@ const getCourseById = async (req, res) => {
     const course = await prisma.course.findUnique({
       where: {
         id: parseInt(id),
-      },
-      include: {
-        students: true,
       },
     });
 
@@ -138,4 +145,11 @@ const deleteCourse = async (req, res) => {
   }
 };
 
-export { createCourse, getCourseById, getCourses, updateCourse, deleteCourse };
+export {
+  createCourse,
+  getCourseById,
+  getCourses,
+  updateCourse,
+  deleteCourse,
+  getEverythingCourses,
+};

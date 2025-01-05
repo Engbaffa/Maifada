@@ -2,6 +2,23 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const getEverythingPrograms = async (req, res) => {
+  try {
+    const programs = await prisma.program.findMany({
+      where: { isActive: true },
+      include: {
+        students: true,
+      },
+    });
+
+    res.status(200).json(programs);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching programs", error: error.message });
+  }
+};
+
 // Create a new program
 const createProgram = async (req, res) => {
   const { title, description } = req.body;
@@ -35,9 +52,6 @@ const getPrograms = async (req, res) => {
   try {
     const programs = await prisma.program.findMany({
       where: { isActive: true },
-      include: {
-        students: true,
-      },
     });
 
     res.status(200).json(programs);
@@ -59,9 +73,6 @@ const getProgramById = async (req, res) => {
   try {
     const program = await prisma.program.findUnique({
       where: { id: parseInt(id) },
-      include: {
-        students: true,
-      },
     });
 
     if (!program || !program.isActive) {
@@ -143,4 +154,5 @@ export {
   getProgramById,
   updateProgram,
   deleteProgram,
+  getEverythingPrograms,
 };

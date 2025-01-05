@@ -2,7 +2,21 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// const getEverythingSemester = async (req, res) => ;
+const getEverythingSemester = async (req, res) => {
+  try {
+    const semesters = await prisma.semester.findMany({
+      where: { isActive: true },
+      include: {
+        cources: true,
+      },
+    });
+    res.status(200).json(semesters);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching semesters", error: error.message });
+  }
+};
 const createSemester = async (req, res) => {
   const { name } = req.body;
 
@@ -28,9 +42,6 @@ const getSemesters = async (req, res) => {
   try {
     const semesters = await prisma.semester.findMany({
       where: { isActive: true },
-      include: {
-        cources: true,
-      },
     });
     res.status(200).json(semesters);
   } catch (error) {
@@ -50,9 +61,6 @@ const getSemesterById = async (req, res) => {
   try {
     const semester = await prisma.semester.findUnique({
       where: { id: parseInt(id) },
-      include: {
-        cources: true,
-      },
     });
 
     if (!semester || !semester.isActive) {
@@ -130,4 +138,5 @@ export {
   getSemesterById,
   updateSemester,
   deleteSemester,
+  getEverythingSemester,
 };
