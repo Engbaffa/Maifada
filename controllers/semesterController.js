@@ -2,26 +2,19 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// const getEverythingSemester = async (req, res) => ;
 const createSemester = async (req, res) => {
-  const { name, sessionId } = req.body;
+  const { name } = req.body;
 
-  if (!name || !sessionId) {
+  if (!name) {
     return res.status(400).json({
       message: "All fields are required",
     });
   }
 
   try {
-    const sessionExists = await prisma.session.findFirst({
-      where: { id: parseInt(sessionId) },
-    });
-
-    if (!sessionExists) {
-      return res.status(400).json({ message: "Session does not exist" });
-    }
-
     const newSemester = await prisma.semester.create({
-      data: { name, sessionId: parseInt(sessionId), isActive: true },
+      data: { name, isActive: true },
     });
 
     res.status(201).json({ message: "New semester created", newSemester });
@@ -36,7 +29,6 @@ const getSemesters = async (req, res) => {
     const semesters = await prisma.semester.findMany({
       where: { isActive: true },
       include: {
-        session: true,
         cources: true,
       },
     });
@@ -59,7 +51,6 @@ const getSemesterById = async (req, res) => {
     const semester = await prisma.semester.findUnique({
       where: { id: parseInt(id) },
       include: {
-        session: true,
         cources: true,
       },
     });
@@ -80,8 +71,8 @@ const getSemesterById = async (req, res) => {
 
 const updateSemester = async (req, res) => {
   const { id } = req.params;
-  const { sessionId, name } = req.body;
-  if (!name && !sessionId) {
+  const { name } = req.body;
+  if (!name) {
     return res.status(400).json({ message: "At least one fields required" });
   }
 
@@ -90,17 +81,9 @@ const updateSemester = async (req, res) => {
   }
 
   try {
-    const session = await prisma.session.findUnique({
-      where: { id: parseInt(sessionId) },
-    });
-
-    if (!session || !session.isActive) {
-      return res.status(404).json({ message: "Session not found or inactive" });
-    }
-
     const updatedSemester = await prisma.semester.update({
       where: { id: parseInt(id) },
-      data: { name, sessionId: parseInt(sessionId) },
+      data: { name },
     });
 
     res.status(200).json({ message: "Semester updated", updatedSemester });
