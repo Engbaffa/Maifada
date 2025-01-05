@@ -58,7 +58,7 @@ model Session {
   
   // list
   studentPayments    StudentPayment[]
-  semesters   Semester[]
+
   students Student[]
   registeredCourses StudentCourse[]
   createdAt   DateTime @default(now())
@@ -95,11 +95,9 @@ model Course {
 
 model Semester {
   id          Int      @id @default(autoincrement())
-  name        SemesterType
+  name        SemesterType @unique
 
-  // relationships
-  sessionId   Int
-  session     Session   @relation(fields: [sessionId], references: [id])
+
 
   //lists
   cources StudentCourse[]
@@ -107,7 +105,7 @@ model Semester {
   updatedAt   DateTime  @updatedAt
   isActive    Boolean   @default(true)
 
-  @@unique([name, sessionId])
+
 }
 
 model Payment {
