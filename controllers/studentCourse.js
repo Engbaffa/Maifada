@@ -1,64 +1,26 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-const getEverythingAllStudentCourse = async (req, res) => {
-  try {
-    const registeredCourses = await prisma.studentCourse.findMany({
-      include: {
-        student: true,
-        course: true,
-        program: true,
-        semester: true,
-        session: true,
-      },
-    });
-
-    return res.status(200).json(registeredCourses);
-  } catch (error) {
-    res.status(500).json({
-      message: "Internal server error.",
-      error: error.message,
-    });
-  }
-};
 // ✅ Register a Course for a Student
 const registerCourse = async (req, res) => {
-  const { id } = req.params;
-  const { programId, courseId, semesterId, sessionId } = req.body;
+  const { studentId, courseId, semesterId } = req.body;
 
-  if (!courseId || !programId || !semesterId || !sessionId) {
+  if (!courseId || !semesterId || !studentId) {
     return res.status(400).json({ message: "All fields are mandatory." });
   }
 
   try {
-    // Check if the course is already registered
-    const existingCourse = await prisma.studentCourse.findUnique({
-      where: {
-        studentId_sessionId_semesterId_courseId_programId: {
-          studentId: parseInt(id),
-          programId: parseInt(programId),
-          semesterId: parseInt(semesterId),
-          sessionId: parseInt(sessionId),
-          courseId: parseInt(courseId),
-        },
-      },
-    });
-
-    if (existingCourse) {
-      return res.status(400).json({ message: "Course already registered." });
-    }
-
     // Register the course
     const newCourse = await prisma.studentCourse.create({
       data: {
-        studentId: parseInt(id),
+        studentId: parseInt(studentId),
         courseId: parseInt(courseId),
-        programId: parseInt(programId),
         semesterId: parseInt(semesterId),
-        sessionId: parseInt(sessionId),
       },
     });
-
+    if (!newCourse) {
+      return res.status(400).json({ message: "Not registered" });
+    }
     res.status(201).json(newCourse);
   } catch (error) {
     res.status(500).json({
@@ -69,13 +31,13 @@ const registerCourse = async (req, res) => {
 };
 
 // ✅ Get All Courses Registered by a Student
-const getCourseByStudent = async (req, res) => {
+const getStudentCourseById = async (req, res) => {
   const { id } = req.params;
 
   try {
     const registeredCourses = await prisma.studentCourse.findMany({
       where: {
-        studentId: parseInt(id),
+        id: parseInt(id),
       },
     });
 
@@ -109,29 +71,15 @@ const getAllStudentCourse = async (req, res) => {
 // ✅ Drop a Registered Course
 const dropCourse = async (req, res) => {
   const { id } = req.params;
-  const { courseId, sessionId, semesterId, programId } = req.body;
-
-  if (!courseId || !sessionId || !semesterId || !programId) {
-    return res.status(400).json({ message: "All fields are mandatory." });
-  }
-
   try {
     const droppedCourse = await prisma.studentCourse.delete({
       where: {
-        studentId_sessionId_semesterId_courseId_programId: {
-          studentId: parseInt(id),
-          courseId: parseInt(courseId),
-          sessionId: parseInt(sessionId),
-          semesterId: parseInt(semesterId),
-          programId: parseInt(programId),
-        },
-        include: {
-          student: true,
-          courseId: true,
-        },
+        id: parseInt(id),
       },
     });
-
+    if (!dropCourse) {
+      return res.status(400).json({ message: "Dropped" });
+    }
     return res
       .status(200)
       .json({ message: "Course dropped successfully.", droppedCourse });
@@ -146,12 +94,7 @@ const dropCourse = async (req, res) => {
 // ✅ Update Student's Scores
 const updateScore = async (req, res) => {
   const { id } = req.params;
-  const { courseId, examScore, testScore, semesterId, sessionId, programId } =
-    req.body;
-
-  if (!courseId || !semesterId || !sessionId || !programId) {
-    return res.status(400).json({ message: "All fields are required." });
-  }
+  const { examScore, testScore } = req.body;
 
   // Check if at least one score is provided
   if (testScore === undefined && examScore === undefined) {
@@ -163,13 +106,7 @@ const updateScore = async (req, res) => {
   try {
     const updatedCourse = await prisma.studentCourse.update({
       where: {
-        studentId_sessionId_semesterId_courseId_programId: {
-          studentId: parseInt(id),
-          courseId: parseInt(courseId),
-          sessionId: parseInt(sessionId),
-          semesterId: parseInt(semesterId),
-          programId: parseInt(programId),
-        },
+        id: parseInt(id),
       },
       data: {
         examScore: examScore !== undefined ? examScore : undefined,
@@ -188,9 +125,8 @@ const updateScore = async (req, res) => {
 
 export {
   registerCourse,
-  getCourseByStudent,
+  getStudentCourseById,
   getAllStudentCourse,
   dropCourse,
   updateScore,
-  getEverythingAllStudentCourse,
 };

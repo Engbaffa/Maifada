@@ -8,9 +8,7 @@ const getEverythingSessions = async (req, res) => {
     const sessions = await prisma.session.findMany({
       where: { isActive: true },
       include: {
-        registeredCourses: true,
-        students: true,
-        studentPayments: true,
+        registeredStudents: true,
       },
     });
     res.status(200).json(sessions);
@@ -34,7 +32,7 @@ const getSessions = async (req, res) => {
   }
 };
 
-// Create a new session
+// Create a new
 const createSession = async (req, res) => {
   const { title, startYear, endYear } = req.body;
 

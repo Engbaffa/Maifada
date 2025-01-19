@@ -7,7 +7,7 @@ const getEverythingSemester = async (req, res) => {
     const semesters = await prisma.semester.findMany({
       where: { isActive: true },
       include: {
-        cources: true,
+        registeredStudents: true,
       },
     });
     res.status(200).json(semesters);
@@ -40,9 +40,7 @@ const createSemester = async (req, res) => {
 };
 const getSemesters = async (req, res) => {
   try {
-    const semesters = await prisma.semester.findMany({
-      where: { isActive: true },
-    });
+    const semesters = await prisma.semester.findMany({});
     res.status(200).json(semesters);
   } catch (error) {
     res
@@ -82,10 +80,6 @@ const updateSemester = async (req, res) => {
   const { name } = req.body;
   if (!name) {
     return res.status(400).json({ message: "At least one fields required" });
-  }
-
-  if (!id) {
-    return res.status(400).json({ message: "Semester ID is required" });
   }
 
   try {

@@ -6,7 +6,7 @@ const getEverythingCourses = async (req, res) => {
   try {
     const courses = await prisma.course.findMany({
       include: {
-        students: true,
+        registeredstudents: true,
       },
     });
     res.status(200).json(courses);

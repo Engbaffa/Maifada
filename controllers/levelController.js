@@ -3,6 +3,10 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const createLevel = async (req, res) => {
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ message: "All fields are mandatory" });
+  }
   try {
     const level = await prisma.level.create({
       data: {
@@ -30,6 +34,15 @@ const getAllLevels = async (req, res) => {
 };
 const getEverythingLevel = async (req, res) => {
   try {
+    const allLevels = await prisma.level.findMany({
+      include: {
+        studentsRegistered,
+      },
+    });
+    if (!allLevels) {
+      return res.status(400).json({ message: "Levels no dey" });
+    }
+    res.status(200).json(allLevels);
   } catch (error) {
     return res
       .status(500)
@@ -38,12 +51,19 @@ const getEverythingLevel = async (req, res) => {
 };
 const deleteLevel = async (req, res) => {
   const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: "Id is required " });
+  }
   try {
-    const level = await prisma.delete({
+    const deletedLevel = await prisma.delete({
       where: {
         id: parseInt(level),
       },
     });
+    if (!deletedLevel) {
+      return res.status(400).json({ message: "Level no deleted" });
+    }
+    return res.status(400).json(deleteLevel);
   } catch (error) {
     return res
       .status(500)
@@ -51,7 +71,18 @@ const deleteLevel = async (req, res) => {
   }
 };
 const updateLevel = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
   try {
+    const updatedLevel = await prisma.level.delete({
+      id: parseInt(id),
+    });
+    if (!updatedLevel) {
+      return res.status(400).json({ message: "Updated level" });
+    }
+    return res.status(200).json(updatedLevel);
   } catch (error) {
     return res
       .status(500)
@@ -59,7 +90,20 @@ const updateLevel = async (req, res) => {
   }
 };
 const getLevelById = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: "ID is required" });
+  }
   try {
+    const level = await prisma.level.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+    });
+    if (!level) {
+      return res.status(400).json({ message: "Level no dey" });
+    }
+    res.status(200).json(level);
   } catch (error) {
     return res
       .status(500)

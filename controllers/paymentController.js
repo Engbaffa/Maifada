@@ -37,6 +37,21 @@ const getAllPayments = async (req, res) => {
   }
 };
 
+const getEverythingPayments = async (req, res) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: {
+        studentPayments: true,
+      },
+    });
+    return res.status(200).json(payments);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ error: "Error fetching payments.", details: error.message });
+  }
+};
+
 const getPaymentById = async (req, res) => {
   const { id } = req.params;
   if (!id) {
@@ -135,4 +150,5 @@ export {
   updatePayment,
   getAllPayments,
   getPaymentById,
+  getEverythingPayments,
 };

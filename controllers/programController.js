@@ -7,7 +7,7 @@ const getEverythingPrograms = async (req, res) => {
     const programs = await prisma.program.findMany({
       where: { isActive: true },
       include: {
-        students: true,
+        registeredStudents: true,
       },
     });
 
