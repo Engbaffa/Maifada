@@ -211,7 +211,7 @@ model StudentProgram {
   programId Int
   program  Program @relation(fields: [programId], references: [id])
 
-  studentId Int
+  studentId Int @unique
   student Student @relation(fields: [studentId], references: [id])
 
   // relationships
