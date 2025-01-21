@@ -98,7 +98,7 @@ const paymentVerification = async (req, res) => {
 
 // ✅ Get All Paid Payments
 
-const getPaymentById = async (req, res) => {
+const getStudentPaymentById = async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -155,5 +155,5 @@ export {
   paymentVerification, // U
   getAll,
   deleteStudentPayment,
-  getPaymentById,
+  getStudentPaymentById,
 };

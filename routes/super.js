@@ -6,15 +6,6 @@ import {
 } from "../controllers/adminController.js";
 
 import {
-  registerCourse,
-  getAllStudentCourse,
-  dropCourse,
-  updateScore,
-  getCourseByStudent,
-  getEverythingAllStudentCourse,
-} from "../controllers/courseRegistration.js";
-
-import {
   createCourse,
   getCourseById,
   getCourses,
@@ -23,8 +14,7 @@ import {
   getEverythingCourses,
 } from "../controllers/coursesController.js";
 
-// Kin
-
+// KIN CONTROLLER
 import {
   createNextOfKin,
   getNextByStudent,
@@ -33,16 +23,28 @@ import {
   deleteNextOfKin,
 } from "../controllers/kinController.js";
 
-//PAYMENT
+// LEVEL
+
+import {
+  createLevel,
+  getAllLevels,
+  getEverythingLevel,
+  updateLevel,
+  deleteLevel,
+  getLevelById,
+} from "../controllers/levelController.js";
+
+// payment
+
 import {
   createPayment,
   deletePayment,
   updatePayment,
   getAllPayments,
   getPaymentById,
+  getEverythingPayments,
 } from "../controllers/paymentController.js";
 
-// PROGRAM
 import {
   createProgram,
   getPrograms,
@@ -52,17 +54,22 @@ import {
   getEverythingPrograms,
 } from "../controllers/programController.js";
 
-//
+import {
+  createPreviousSchools,
+  getPreviousSchoolsByStudent,
+  getPreviousSchools,
+  updatePreviousSchools,
+  deletePreviousSchool,
+} from "../controllers/schoolController.js";
+
 import {
   createSemester,
   getSemesters,
-  getEverythingSemester,
   getSemesterById,
   updateSemester,
   deleteSemester,
+  getEverythingSemester,
 } from "../controllers/semesterController.js";
-
-//SESSION
 
 import {
   createSession,
@@ -82,20 +89,68 @@ import {
   updateUtmeScore,
   updateStudentPassword,
   updateStudent,
-  getEverythingStudents,
+  getEverythingStudentsAll,
+  getEverythingStudentsActive,
+  allStudents,
 } from "../controllers/studentController.js";
+
+import {
+  registerCourse,
+  getStudentCourseById,
+  getAllStudentCourse,
+  dropCourse,
+  updateScore,
+} from "../controllers/studentCourse.js";
+
+// student level
+
+import {
+  createStudentLevel,
+  getAllStudentLevels,
+  getStudentLevelById,
+  allStudentLevel,
+  updateStudentLevel,
+  deleteStudentLevel,
+} from "../controllers/studentLevel.js";
+
+// student payment
 
 import {
   createStudentPayment, // C
   paymentVerification, // U
-  getAllPaid,
-  getAllPending,
-  getAllNotPaid,
   getAll,
   deleteStudentPayment,
-  getPaymentByStudent,
-  getEverythingStudentPayments,
+  getStudentPaymentById,
 } from "../controllers/studentPayment.js";
+
+import {
+  createStudentProgram,
+  getStudentProgramById,
+  updateStudentProgram,
+  deleteStudentProgram,
+  getStudentPrograms,
+} from "../controllers/studentProgram.js";
+
+// student semester
+
+import {
+  getAllStudentSemesters,
+  getEverythingStudentSemester,
+  createStudentSemester,
+  deleteStudentSemester,
+  updateStudentSemester,
+  getStudentSemesterById,
+} from "../controllers/studentSemester.js";
+
+// student session
+
+import {
+  createStudentSessions,
+  getAllStudentSessions,
+  getStudentSessionsById,
+  deleteStudentSessions,
+  updateStudentSessions,
+} from "../controllers/studentSession.js";
 
 const superRouter = express.Router();
 
@@ -103,15 +158,6 @@ const superRouter = express.Router();
 superRouter.post("/register", registerAdmin);
 superRouter.post("/login", loginAdmin);
 superRouter.put("/update-password", updatePassword);
-
-// Course registration routes
-
-superRouter.post("/course-registration/:id", registerCourse); // ✅
-superRouter.get("/course-registration", getAllStudentCourse); // ✅
-superRouter.get("/course-registration/:id", getCourseByStudent); // ✅
-superRouter.delete("/course-registration/:id", dropCourse); // ✅
-superRouter.put("/score/:id", updateScore); // ✅
-superRouter.get("/all-registered-courses", getEverythingAllStudentCourse); // ✅
 
 // Course routes
 superRouter.post("/course", createCourse); // ✅
@@ -122,20 +168,27 @@ superRouter.delete("/course/:id", deleteCourse); // ✅
 superRouter.get("/allcourses", getEverythingCourses); // ✅
 
 // KIN
-
-superRouter.post("/kin/:id", createNextOfKin); // ✅
-superRouter.get("/kin", getNextOfKins); // ✅
+superRouter.post("/kin", createNextOfKin); // ✅
+superRouter.get("/kins", getNextOfKins); // ✅
 superRouter.get("/kin/:id", getNextByStudent); // ✅
 superRouter.put("/kin/:id", updateNextOfKin); // ✅
-superRouter.delete("/kin/:id", deleteNextOfKin); // ✅
+superRouter.get("/kin/:id", deleteNextOfKin); // ✅
+
+// level
+superRouter.post("/level", createLevel); // ✅
+superRouter.get("/levels", getAllLevels); // ✅
+superRouter.get("/level/:id", getLevelById); // ✅
+superRouter.put("/level/:id", updateLevel); // ✅
+superRouter.delete("/level/:id", deleteLevel); // ✅
+superRouter.get("/all-levels", getEverythingLevel); // ✅
 
 // Payment routes
-
 superRouter.post("/payment", createPayment); // ✅
 superRouter.delete("/payment/:id", deletePayment); // ✅
 superRouter.put("/payment/:id", updatePayment); // ✅
 superRouter.get("/payments", getAllPayments); // ✅
 superRouter.get("/payment/:id", getPaymentById); // ✅
+superRouter.get("/allpayments", getEverythingPayments); // ✅
 
 // Program routes
 
@@ -145,6 +198,13 @@ superRouter.get("/program/:id", getProgramById); // ✅
 superRouter.put("/program/:id", updateProgram); // ✅
 superRouter.delete("/program/:id", deleteProgram); // ✅
 superRouter.get("/allprograms", getEverythingPrograms); // ✅
+
+// school
+superRouter.post("/school", createPreviousSchools); // ✅
+superRouter.get("/schools", getPreviousSchools); // ✅
+superRouter.get("/school/:id", getPreviousSchoolsByStudent); // ✅
+superRouter.put("/kin/:id", updatePreviousSchools); // ✅
+superRouter.delete("/kin/:id", deletePreviousSchool); // ✅
 
 // Semester routes
 superRouter.post("/semester", createSemester); // ✅
@@ -171,18 +231,55 @@ superRouter.get("/students", getStudents); // ✅
 superRouter.delete("/student/:id", deleteStudent); // ✅
 superRouter.put("/student-utme/:id", updateUtmeScore); // ✅
 superRouter.put("/student/:id", updateStudent); // ✅
-superRouter.get("/allstudents", getEverythingStudents); // ✅
+superRouter.get("/allstudents", allStudents); // ✅
+superRouter.get("/active-students", getEverythingStudentsActive); // ✅
+superRouter.get("/every-students", getEverythingStudentsAll); // ✅
+
+// student course
+superRouter.post("/registercourse", registerCourse);
+superRouter.get("/registered/:id", getStudentCourseById);
+superRouter.delete("/registered/:id", dropCourse);
+superRouter.put("/registered/:id", updateScore);
+superRouter.get("/registercourses", getAllStudentCourse);
+
+// student level
+
+superRouter.post("/studentlevel", createStudentLevel);
+superRouter.get("/studentlevel/:id", getStudentLevelById);
+superRouter.delete("/studentlevel/:id", deleteStudentLevel);
+superRouter.put("/studentlevel/:id", updateStudentLevel);
+superRouter.get("/studentlevels", getAllStudentLevels);
+superRouter.get("/allstudentlevels", allStudentLevel);
 
 // STUDENT - PAYMENT
+superRouter.post("studentpayment", createStudentPayment);
+superRouter.put("verify-payment", paymentVerification);
+superRouter.get("studentpayments", getAll);
+superRouter.delete("studentpayment/:id", deleteStudentPayment);
+superRouter.get("studentpayment/:id", getPaymentById);
 
-superRouter.post("/student-payment/:id", createStudentPayment); // ✅
-superRouter.put("/student-payment/:id", paymentVerification); // ✅
-superRouter.get("/student-paid", getAllPaid); // ✅
-superRouter.get("/student-pending", getAllPending); // ✅
-superRouter.get("/student-notpaid", getAllNotPaid); // ✅
-superRouter.get("/student-payments", getAll); // ✅
-superRouter.get("/student-payments/:id", getPaymentByStudent); // ✅
-superRouter.delete("/student-payments/:id", deleteStudentPayment); // ✅
-superRouter.get("/allstudent-payments/", getEverythingStudentPayments); // ✅
+// studetn program
+
+superRouter.post("studentprogram", createStudentProgram);
+superRouter.get("studentprogram/:id", getStudentProgramById);
+superRouter.put("studentprogram/:id", updateStudentProgram);
+superRouter.delete("studentprogram/:id", deleteStudentProgram);
+superRouter.delete("studentprograms", getStudentPrograms);
+
+// student semester
+
+superRouter.post("studentsemester", createStudentSemester);
+superRouter.get("studentsemester/:id", getStudentSemesterById);
+superRouter.put("studentsemester/:id", updateStudentSemester);
+superRouter.delete("studentsemester/:id", deleteStudentSemester);
+superRouter.delete("studentsemesters", getAllStudentSemesters);
+superRouter.delete("allstudentsemesters", getEverythingStudentSemester);
+
+// student session
+superRouter.post("studentsession", createStudentSessions);
+superRouter.get("studentsemester/:id", getStudentSessionsById);
+superRouter.put("studentsemester/:id", updateStudentSessions);
+superRouter.delete("studentsemester/:id", deleteStudentSessions);
+superRouter.delete("studentsemesters", getAllStudentSessions);
 
 export default superRouter;

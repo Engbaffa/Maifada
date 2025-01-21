@@ -43,9 +43,8 @@ const getNextByStudent = async (req, res) => {
   }
 };
 const createNextOfKin = async (req, res) => {
-  const { id } = req.params;
-  const { relationship, name, address, phone, email } = req.body;
-  if (!relationship || !name || !address || !phone || !email) {
+  const { studentId, relationship, name, address, phone, email } = req.body;
+  if (!studentId || !relationship || !name || !address || !phone || !email) {
     return res.status(400).json({ message: "At least one is mandatory" });
   }
   try {
@@ -56,7 +55,7 @@ const createNextOfKin = async (req, res) => {
         address,
         phone,
         email,
-        studentId: parseInt(id),
+        studentId: parseInt(studentId),
         isActive: true,
       },
     });
@@ -68,13 +67,13 @@ const createNextOfKin = async (req, res) => {
   }
 };
 const updateNextOfKin = async (req, res) => {
-  const { id } = req.params; //student Id
+  const { id } = req.params;
   const { relationship, name, address, phone, email, isActive } = req.body;
 
   try {
     const nextOfKin = await prisma.nextOfKin.update({
       where: {
-        studentId: parseInt(id), // Ensure you're using the unique ID here
+        id: parseInt(id), // Unique ID.
       },
       data: {
         relationship,

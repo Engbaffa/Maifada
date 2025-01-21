@@ -12,9 +12,10 @@ const getEverythingStudentSemester = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({ error: "Error fetching semesters.", details: error.message });
   }
 };
+
 const getAllStudentSemesters = async (req, res) => {
   try {
     const allSemesters = await prisma.studentSemester.findMany({});
@@ -22,15 +23,14 @@ const getAllStudentSemesters = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({ error: "Error fetching semesters.", details: error.message });
   }
 };
 
-// ✅ Create a New Student Payment
 const createStudentSemester = async (req, res) => {
   const { studentId, levelId, semesterId } = req.body;
   if (!studentId || !levelId || !semesterId) {
-    return req.status(400).json({ message: "All fields are required" });
+    return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
@@ -52,7 +52,10 @@ const createStudentSemester = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error creating payment.", details: error.message });
+      .json({
+        error: "Error creating student semester.",
+        details: error.message,
+      });
   }
 };
 
@@ -68,13 +71,21 @@ const deleteStudentSemester = async (req, res) => {
       },
     });
     if (!student) {
-      return res.status(400).json({ message: "Session not deleted" });
+      return res.status(400).json({ message: "Student semester not found" });
     }
-    res.status(200).json(student);
+    await prisma.studentSemester.delete({
+      where: {
+        id: parseInt(id),
+      },
+    });
+    res.status(200).json({ message: "Student semester deleted successfully" });
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({
+        error: "Error deleting student semester.",
+        details: error.message,
+      });
   }
 };
 
@@ -83,7 +94,7 @@ const updateStudentSemester = async (req, res) => {
   const { levelId, semesterId } = req.body;
 
   if (!levelId || !semesterId) {
-    return res.status(400).json({ message: "Al fields are required" });
+    return res.status(400).json({ message: "All fields are required" });
   }
   try {
     const updatedStudent = await prisma.studentSemester.update({
@@ -96,13 +107,16 @@ const updateStudentSemester = async (req, res) => {
       },
     });
     if (!updatedStudent) {
-      return res.status(400).json({ message: "not updated" });
+      return res.status(400).json({ message: "Student semester not updated" });
     }
     res.status(200).json(updatedStudent);
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({
+        error: "Error updating student semester.",
+        details: error.message,
+      });
   }
 };
 
@@ -118,13 +132,16 @@ const getStudentSemesterById = async (req, res) => {
       },
     });
     if (!student) {
-      return res.status(400).json({ message: "student no dey" });
+      return res.status(400).json({ message: "Student semester not found" });
     }
     res.status(200).json(student);
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({
+        error: "Error fetching student semester.",
+        details: error.message,
+      });
   }
 };
 

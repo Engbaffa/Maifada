@@ -16,7 +16,7 @@ const getPreviousSchoolsByStudent = async (req, res) => {
   const { id } = req.params;
   try {
     const student = await prisma.previousSchool.findUnique({
-      where: { studentId: parseInt(id), isActive: true },
+      where: { id: parseInt(id), isActive: true },
     });
     if (!student) {
       return res.status(404).json({ message: "Student not found or inactive" });
@@ -35,7 +35,7 @@ const deletePreviousSchool = async (req, res) => {
   try {
     const deletedSchools = await prisma.previousSchool.delete({
       where: {
-        studentId: parseInt(id),
+        id: parseInt(id),
       },
     });
     res
@@ -49,9 +49,15 @@ const deletePreviousSchool = async (req, res) => {
   }
 };
 const createPreviousSchools = async (req, res) => {
-  const { id } = req.params;
-  const { name, type, yearOfGraduation, address } = req.body;
-  if (!name || !type || !yearOfGraduation || !address || !studentId) {
+  const { studentId, name, type, yearOfGraduation, address } = req.body;
+  if (
+    !studentId ||
+    !name ||
+    !type ||
+    !yearOfGraduation ||
+    !address ||
+    !studentId
+  ) {
     return res.status(400).json({ message: "All fields are mandatory" });
   }
   try {
@@ -61,7 +67,7 @@ const createPreviousSchools = async (req, res) => {
         type,
         yearOfGraduation,
         address,
-        studentId: parseInt(id),
+        studentId: parseInt(studentId),
         isActive: true,
       },
     });
@@ -79,7 +85,7 @@ const updatePreviousSchools = async (req, res) => {
 
   try {
     const updatedSchools = await prisma.previousSchool.update({
-      where: { studentId: parseInt(id) },
+      where: { id: parseInt(id) },
       data: { name, type, yearOfGraduation, address, isActive: true },
     });
     res
