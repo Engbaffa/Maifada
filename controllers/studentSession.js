@@ -45,7 +45,7 @@ const deleteStudentSessions = async (req, res) => {
     return res.status(400).json({ message: "ID is required" });
   }
   try {
-    const student = await prisma.studentSession.findUnique({
+    const student = await prisma.studentSession.delete({
       where: {
         id: parseInt(id),
       },

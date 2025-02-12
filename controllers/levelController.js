@@ -16,6 +16,7 @@ const createLevel = async (req, res) => {
     if (!level) {
       return res.status(400).json({ message: "Level not created" });
     }
+    return res.status(201).json(level);
   } catch (error) {
     return res
       .status(500)
@@ -36,7 +37,7 @@ const getEverythingLevel = async (req, res) => {
   try {
     const allLevels = await prisma.level.findMany({
       include: {
-        studentsRegistered,
+        studentsRegistered: true,
       },
     });
     if (!allLevels) {
@@ -55,15 +56,15 @@ const deleteLevel = async (req, res) => {
     return res.status(400).json({ message: "Id is required " });
   }
   try {
-    const deletedLevel = await prisma.delete({
+    const deletedLevel = await prisma.level.delete({
       where: {
-        id: parseInt(level),
+        id: parseInt(id),
       },
     });
     if (!deletedLevel) {
       return res.status(400).json({ message: "Level no deleted" });
     }
-    return res.status(400).json(deleteLevel);
+    return res.status(201).json(deletedLevel);
   } catch (error) {
     return res
       .status(500)
@@ -72,12 +73,18 @@ const deleteLevel = async (req, res) => {
 };
 const updateLevel = async (req, res) => {
   const { id } = req.params;
+  const { title } = req.body;
   if (!id) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
-    const updatedLevel = await prisma.level.delete({
-      id: parseInt(id),
+    const updatedLevel = await prisma.level.update({
+      where: {
+        id: parseInt(id),
+      },
+      data: {
+        title,
+      },
     });
     if (!updatedLevel) {
       return res.status(400).json({ message: "Updated level" });

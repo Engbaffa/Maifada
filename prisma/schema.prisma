@@ -48,7 +48,7 @@ enum PaymentStatus {
 }
 
 enum LevelType {
-  FREHSER
+  FRESHMEN
   SOPHOMORE
   JUNIOR
   SENIOR 
@@ -63,8 +63,6 @@ model Session {
 
   // relationship
   registeredStudents studentSession[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   isActive    Boolean  @default(false) 
 }
 model Level {
@@ -73,9 +71,10 @@ model Level {
 
   // relationship
   studentsRegistered studentLevel[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  
   isActive    Boolean  @default(false)
+
+  @@unique([title])
 
 }
 
@@ -86,8 +85,7 @@ model Program {
 
   // relationship
   registeredStudents StudentProgram[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
   isActive    Boolean  @default(true)
 
 
@@ -106,8 +104,7 @@ model Course {
 
   // relationship
   registeredstudents    StudentCourse[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+ 
   isActive    Boolean  @default(true)
 
 }
@@ -118,8 +115,7 @@ model Semester {
 
   // relationship
   registeredStudents studentSemester[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+ 
   isActive    Boolean   @default(true)
 }
 
@@ -132,8 +128,7 @@ model Payment {
   // relationships
   studentPayments    StudentPayment[]
   
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  
   isActive    Boolean  @default(true)
   @@unique([type, amount, description])
 }
@@ -161,9 +156,6 @@ model Student {
   courses        StudentCourse[]
   payments       StudentPayment[] 
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
 
   
 }
@@ -180,9 +172,6 @@ model NextOfKin {
   studentId   Int
   student     Student   @relation(fields: [studentId], references: [id])
 
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
   isActive    Boolean   @default(true)
   @@unique([studentId])
 }
@@ -199,8 +188,6 @@ model PreviousSchool {
   student    Student @relation(fields: [studentId], references: [id])
 
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
   isActive   Boolean  @default(true)
   @@unique([studentId])
 }
@@ -217,9 +204,9 @@ model StudentProgram {
   // relationships
 
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
   isActive   Boolean  @default(true)
+
+  @@unique([programId, studentId])
 }
 model StudentCourse {
   id         Int      @id @default(autoincrement())
@@ -239,8 +226,7 @@ model StudentCourse {
 
   
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+
   isActive   Boolean   @default(true)
 
   @@unique([semsterId, courseId, studentId])
@@ -258,6 +244,8 @@ model studentSession {
   studentId Int
   student Student @relation(fields: [studentId], references: [id])
 
+  levels studentLevel[]
+
   @@unique([sessionId, studentId])
 }
 
@@ -266,6 +254,8 @@ model studentLevel {
   
 
   // dependencies
+  sessionId Int
+  session studentSession @relation(fields: [sessionId], references: [id])
 
   levelId Int
   level Level @relation(fields: [levelId], references: [id])
@@ -296,8 +286,7 @@ model StudentPayment {
   levelId Int
   level studentLevel @relation(fields: [levelId], references: [id])
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+ 
   isActive   Boolean  @default(true)
 
   @@unique([studentId, paymentId, levelId])
@@ -316,6 +305,8 @@ model studentSemester {
   semester Semester @relation(fields: [semesterId], references: [id])
 
   registeredStudents StudentCourse[]
+
+  @@unique([studentId, levelId, semesterId])
 }
 
 model Admin {

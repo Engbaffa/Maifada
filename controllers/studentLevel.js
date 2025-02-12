@@ -1,13 +1,16 @@
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 const createStudentLevel = async (req, res) => {
-  const { id, sid } = req.body;
-  if (!id || !sid) {
+  const { sessionId, levelId, studentId } = req.body;
+  if (!sessionId || !levelId || !studentId) {
     return res.status(400).json({ message: "Alll fields are required" });
   }
   try {
-    const studentLevel = await Prisma.studentLevel.create({
+    const studentLevel = await prisma.studentLevel.create({
       data: {
-        levelId: parseInt(id),
-        studentId: parseInt(sid),
+        levelId: parseInt(levelId),
+        studentId: parseInt(studentId),
+        sessionId: parseInt(sessionId),
       },
     });
     if (!studentLevel) {
@@ -21,10 +24,7 @@ const createStudentLevel = async (req, res) => {
   }
 };
 const getStudentLevelById = async (req, res) => {
-  const { id } = req.body;
-  if (!id) {
-    return res.status(400).json({ message: "Al fields are mandatory" });
-  }
+  const { id } = req.params;
   try {
     const student = await prisma.studentLevel.findUnique({
       where: {
@@ -49,9 +49,7 @@ const getAllStudentLevels = async (req, res) => {
     }
     return res.status(200).json(allstudents);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error logging in", error: error.message });
+    return res.status(500).json({ message: "Error ", error: error.message });
   }
 };
 const deleteStudentLevel = async (req, res) => {

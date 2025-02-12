@@ -1,71 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-const allStudents = async (req, res) => {
-  try {
-    const students = await prisma.student.findMany({});
-    return res.status(200).json(students);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching students", error: error.message });
-  }
-};
-const getEverythingStudentsActive = async (req, res) => {
-  try {
-    const students = await prisma.student.findMany({
-      where: { isActive: true },
-      include: {
-        session: true,
-        program: true, // If program is part of the student
-        semester: true, // If semster is part of the student
-        nextOfKin: true, // If there's a next of kin relationship
-        previousSchools: true, // If there are previous schools linked
-        courses: true, // If courses are directly related
-        payments: true, // If payments are part of the student
-        level: true, // If payments are part of the student
-      },
-    });
-
-    res.status(200).json(students);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching students", error: error.message });
-  }
-};
-const getEverythingStudentsAll = async (req, res) => {
-  try {
-    const students = await prisma.student.findMany({
-      include: {
-        session: true,
-        program: true, // If program is part of the student
-        semester: true, // If semster is part of the student
-        nextOfKin: true, // If there's a next of kin relationship
-        previousSchools: true, // If there are previous schools linked
-        courses: true, // If courses are directly related
-        payments: true, // If payments are part of the student
-        level: true, // If payments are part of the student
-      },
-    });
-
-    res.status(200).json(students);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching students", error: error.message });
-  }
-};
-const loginStudent = async (req, res) => {
-  try {
-    // Implement login logic here
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
-  }
-};
-
+// create
 const createStudent = async (req, res) => {
   const { firstname, lastname, email, gender, address, dateOfBirth } = req.body;
   if (
@@ -99,7 +35,46 @@ const createStudent = async (req, res) => {
       .json({ message: "Error creating student", error: error.message });
   }
 };
+// getAll
+const getStudents = async (req, res) => {
+  try {
+    const students = await prisma.student.findMany({
+      where: { isActive: true },
+    });
 
+    res.status(200).json(students);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching students", error: error.message });
+  }
+};
+// getEverything
+const getAllStudents = async (req, res) => {
+  try {
+    const students = await prisma.student.findMany({
+      include: {
+        level: true,
+        session: true,
+        program: true,
+        semesters: true,
+        nextOfKin: true,
+        previousSchools: true,
+        courses: true,
+        payments: true,
+      },
+    });
+    if (!students) {
+      return res.status(404).json({ message: "No student found" });
+    }
+    return res.status(200).json(students);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching students", error: error.message });
+  }
+};
+// getById
 const getStudentById = async (req, res) => {
   const { id } = req.params;
   if (!id) {
@@ -119,13 +94,25 @@ const getStudentById = async (req, res) => {
       .json({ message: "Error fetching student", error: error.message });
   }
 };
-
-const getStudents = async (req, res) => {
+// getE-Active
+const getEverythingStudentsActive = async (req, res) => {
   try {
     const students = await prisma.student.findMany({
       where: { isActive: true },
+      include: {
+        level: true,
+        session: true,
+        program: true,
+        semesters: true,
+        nextOfKin: true,
+        previousSchools: true,
+        courses: true,
+        payments: true,
+      },
     });
-
+    if (!students) {
+      return res.status(404).json({ message: "No student found" });
+    }
     res.status(200).json(students);
   } catch (error) {
     res
@@ -133,27 +120,34 @@ const getStudents = async (req, res) => {
       .json({ message: "Error fetching students", error: error.message });
   }
 };
-
+//login
+const loginStudent = async (req, res) => {
+  try {
+    // Implement login logic here
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
+// delete
 const deleteStudent = async (req, res) => {
   const { id } = req.params;
   if (!id) {
     return res.status(400).json({ message: "Student ID is required" });
   }
   try {
-    const student = await prisma.student.findUnique({
-      where: { id: parseInt(id), isActive: true },
+    const student = await prisma.student.update({
+      where: { id: parseInt(id) },
+      data: {
+        isActive: false,
+      },
     });
     if (!student) {
       return res
         .status(404)
         .json({ message: "Student not found or already inactive" });
     }
-    await prisma.student.update({
-      where: { id: parseInt(id) },
-      data: {
-        isActive: false,
-      },
-    });
     res.status(200).json({ message: "Student deactivated successfully" });
   } catch (error) {
     res
@@ -161,7 +155,32 @@ const deleteStudent = async (req, res) => {
       .json({ message: "Error deactivating student", error: error.message });
   }
 };
-
+// restore
+const restoreStudent = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: "Student ID is required" });
+  }
+  try {
+    const student = await prisma.student.update({
+      where: { id: parseInt(id) },
+      data: {
+        isActive: true,
+      },
+    });
+    if (!student) {
+      return res
+        .status(404)
+        .json({ message: "Student not found or already inactive" });
+    }
+    res.status(200).json(student);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error deactivating student", error: error.message });
+  }
+};
+// update score
 const updateUtmeScore = async (req, res) => {
   const { id } = req.params;
   const { utmeScore } = req.body;
@@ -236,7 +255,7 @@ const updateStudent = async (req, res) => {
   }
   try {
     const updatedStudent = await prisma.student.update({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(id), isActive: true },
       data: {
         firstname,
         lastname,
@@ -266,7 +285,7 @@ export {
   updateUtmeScore,
   updateStudentPassword,
   updateStudent,
-  getEverythingStudentsAll,
   getEverythingStudentsActive,
-  allStudents,
+  getAllStudents,
+  restoreStudent,
 };

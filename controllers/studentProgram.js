@@ -20,7 +20,7 @@ const createStudentProgram = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Error fetching payments.", details: error.message });
+      .json({ error: "Error fetching programs.", details: error.message });
   }
 };
 const getStudentPrograms = async (req, res) => {
