@@ -30,9 +30,7 @@ enum School {
 
 enum UserRole {
   ADMIN
-  ADMISSION
-  BURSARY
-  HOD
+  STUDENT
 }
 
 enum SemesterType {
@@ -121,7 +119,7 @@ model Student {
   address          String?
   utmeScore        Float?
   isActive         Boolean        @default(true)
-
+  role             UserRole @default(STUDENT)
   studentLevels    studentLevel[]
   studentSessions  studentSession[]
   programs         StudentProgram[]
@@ -230,7 +228,7 @@ model studentSemester {
 
 model Admin {
   id               Int            @id @default(autoincrement())
-  role             UserRole
+  role             UserRole @default(ADMIN)
   email            String         @unique
   password         String         @default("password")
 }
