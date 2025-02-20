@@ -36,6 +36,7 @@ const getStudentPrograms = async (req, res) => {
       .json({ error: "Error fetching payments.", details: error.message });
   }
 };
+
 const getStudentProgramById = async (req, res) => {
   const { id } = req.params;
   try {

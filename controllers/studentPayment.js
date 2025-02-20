@@ -17,11 +17,38 @@ const getAll = async (req, res) => {
 const createStudentPayment = async (req, res) => {
   const { paymentCode, paymentId, studentId, levelId } = req.body;
 
-  if (!paymentCode || !paymentId || !sessionId || !studentId || !levelId) {
+  if (!paymentCode || !paymentId || !studentId || !levelId) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
   try {
+    // Check if the studentLevel (NOT Level) exists
+    const studentLevelExists = await prisma.studentLevel.findFirst({
+      where: {
+        id: parseInt(levelId), // ✅ Correctly checking against studentLevel.id
+        studentId: parseInt(studentId),
+      },
+    });
+
+    if (!studentLevelExists) {
+      return res
+        .status(400)
+        .json({
+          error: "Invalid levelId. Student is not registered in this level.",
+        });
+    }
+
+    // Ensure the payment type exists
+    const existingPayment = await prisma.payment.findUnique({
+      where: { id: parseInt(paymentId) },
+    });
+
+    if (!existingPayment) {
+      return res
+        .status(400)
+        .json({ error: "Invalid paymentId. Payment type not found." });
+    }
+
     // Hash the payment code
     const hashedCode = await bcrypt.hash(paymentCode, 10);
 
@@ -30,7 +57,7 @@ const createStudentPayment = async (req, res) => {
       data: {
         studentId: parseInt(studentId),
         paymentId: parseInt(paymentId),
-        levelId: parseInt(levelId),
+        levelId: parseInt(levelId), // ✅ Correctly referencing studentLevel.id
         paymentCode: hashedCode,
         status: "PENDING",
       },

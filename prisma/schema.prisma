@@ -46,7 +46,7 @@ enum PaymentStatus {
   PENDING
   PAID
 }
-
+ 
 enum LevelType {
   FRESHMEN
   SOPHOMORE
@@ -173,7 +173,7 @@ model NextOfKin {
   student     Student   @relation(fields: [studentId], references: [id])
 
   isActive    Boolean   @default(true)
-  @@unique([studentId])
+  
 }
 
 model PreviousSchool {
@@ -189,7 +189,7 @@ model PreviousSchool {
 
 
   isActive   Boolean  @default(true)
-  @@unique([studentId])
+
 }
 model StudentProgram {
   id Int @id @default(autoincrement())
