@@ -54,24 +54,23 @@ const getStudentSemesterById = async (req, res) => {
 };
 
 // ✅ Create a new student semester (with validation)
-
 const createStudentSemester = async (req, res) => {
-  const { studentId, levelId, semesterId } = req.body;
-  if (!studentId || !levelId || !semesterId) {
+  const { studentId, studentLevelId, semesterId } = req.body;
+  if (!studentId || !studentLevelId || !semesterId) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
-    const newSemster = await prisma.studentSemester.create({
+    const newSemester = await prisma.studentSemester.create({
       data: {
         studentId: parseInt(studentId),
-        levelId: parseInt(levelId),
+        studentLevelId: parseInt(studentLevelId),
         semesterId: parseInt(semesterId),
       },
     });
-    if (!newSemster) {
+    if (!newSemester) {
       return res.status(400).json({ message: "Not created" });
     }
-    return res.status(201).json(newSemster);
+    return res.status(201).json(newSemester);
   } catch (error) {
     res
       .status(500)

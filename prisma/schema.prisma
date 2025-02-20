@@ -26,7 +26,7 @@ enum School {
   PRIMARY
   SECONDARY
   COLLEGE
-} 
+}
 
 enum UserRole {
   ADMIN
@@ -36,7 +36,7 @@ enum UserRole {
 }
 
 enum SemesterType {
-  FIRST 
+  FIRST
   SECOND
   SUMMER
 }
@@ -46,291 +46,191 @@ enum PaymentStatus {
   PENDING
   PAID
 }
- 
+
 enum LevelType {
   FRESHMEN
   SOPHOMORE
   JUNIOR
-  SENIOR 
+  SENIOR
 }
+
 model Session {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
-  startYear   Int
-  endYear     Int
-  @@unique([startYear, endYear, title])
+  id               Int            @id @default(autoincrement())
+  title            String         @unique
+  startYear        Int
+  endYear          Int
+  isActive         Boolean        @default(false)
 
-
-  // relationship
   registeredStudents studentSession[]
-  isActive    Boolean  @default(false) 
-}
-model Level {
-  id          Int      @id @default(autoincrement())
-  title       LevelType 
 
-  // relationship
+  @@unique([startYear, endYear, title])
+}
+
+model Level {
+  id               Int            @id @default(autoincrement())
+  title            LevelType
+  isActive         Boolean        @default(false)
   studentsRegistered studentLevel[]
-  
-  isActive    Boolean  @default(false)
 
   @@unique([title])
-
 }
 
 model Program {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
-  description String?
-
-  // relationship
+  id               Int            @id @default(autoincrement())
+  title            String         @unique
+  description      String?
+  isActive         Boolean        @default(true)
   registeredStudents StudentProgram[]
-
-  isActive    Boolean  @default(true)
-
-
-
 }
 
 model Course {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
-  creditUnit  Int
-  courseCode  String   @unique
-  description String?
-
-
-
-
-  // relationship
-  registeredstudents    StudentCourse[]
- 
-  isActive    Boolean  @default(true)
-
+  id               Int            @id @default(autoincrement())
+  title            String         @unique
+  creditUnit       Int
+  courseCode       String         @unique
+  description      String?
+  isActive         Boolean        @default(true)
+  registeredStudents StudentCourse[]
 }
 
 model Semester {
-  id          Int      @id @default(autoincrement())
-  name        SemesterType @unique
-
-  // relationship
+  id               Int            @id @default(autoincrement())
+  name             SemesterType   @unique
+  isActive         Boolean        @default(true)
   registeredStudents studentSemester[]
- 
-  isActive    Boolean   @default(true)
 }
 
 model Payment {
-  id          Int         @id @default(autoincrement())
-  type        String @unique
-  amount      Float?
-  description String?
-
-  // relationships
-  studentPayments    StudentPayment[]
-  
-  
-  isActive    Boolean  @default(true)
+  id               Int            @id @default(autoincrement())
+  type             String
+  amount           Float?
+  description      String?
+  isActive         Boolean        @default(true)
+  studentPayments  StudentPayment[]
   @@unique([type, amount, description])
 }
 
 model Student {
-  id             Int            @id @default(autoincrement())
-  firstname      String
-  lastname       String
-  email          String    @unique      
-  gender         Gender?
-  password       String?        @default("password")
-  dateOfBirth    DateTime?
-  address        String?
-  utmeScore      Float?
-  isActive       Boolean        @default(true)
+  id               Int            @id @default(autoincrement())
+  firstname        String
+  lastname         String
+  email            String         @unique
+  gender           Gender?        @default(OTHER)
+  password         String?        @default("password")
+  dateOfBirth      DateTime?
+  address          String?
+  utmeScore        Float?
+  isActive         Boolean        @default(true)
 
-
-  // relationship
-  level studentLevel[]
-  session studentSession[]
-  program StudentProgram[]
-  semesters studentSemester[]
-  nextOfKin      NextOfKin[]
-  previousSchools PreviousSchool[]
-  courses        StudentCourse[]
-  payments       StudentPayment[] 
-
-
-  
+  studentLevels    studentLevel[]
+  studentSessions  studentSession[]
+  programs         StudentProgram[]
+  semesters        studentSemester[]
+  nextOfKin        NextOfKin[]
+  previousSchools  PreviousSchool[]
+  courses          StudentCourse[]
+  payments         StudentPayment[]
 }
 
 model NextOfKin {
-  id          Int        @id @default(autoincrement())
-  relationship Relationship @default(PARENT)
-  name        String
-  address     String?
-  phone       String?
-  email       String?
-
-  // dependency
-  studentId   Int
-  student     Student   @relation(fields: [studentId], references: [id])
-
-  isActive    Boolean   @default(true)
-  
+  id               Int            @id @default(autoincrement())
+  relationship     Relationship   @default(PARENT)
+  name             String
+  address          String?
+  phone            String?
+  email            String?
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  isActive         Boolean        @default(true)
 }
 
 model PreviousSchool {
-  id         Int      @id @default(autoincrement())
-  name       String?
-  type       School?
+  id               Int            @id @default(autoincrement())
+  name             String?
+  type             School?
   yearOfGraduation Int?
-  address    String?
-
-  // dependency
-  studentId  Int
-  student    Student @relation(fields: [studentId], references: [id])
-
-
-  isActive   Boolean  @default(true)
-
+  address          String?
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  isActive         Boolean        @default(true)
 }
+
 model StudentProgram {
-  id Int @id @default(autoincrement())
-
-  // dependencies
-  programId Int
-  program  Program @relation(fields: [programId], references: [id])
-
-  studentId Int @unique
-  student Student @relation(fields: [studentId], references: [id])
-
-  // relationships
-
-
-  isActive   Boolean  @default(true)
-
+  id               Int            @id @default(autoincrement())
+  programId        Int
+  program          Program        @relation(fields: [programId], references: [id])
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  isActive         Boolean        @default(true)
   @@unique([programId, studentId])
 }
+
 model StudentCourse {
-  id         Int      @id @default(autoincrement())
-  testScore  Float?
-  examScore  Float?
-
-  // dependencies
-  
-  studentId  Int
-  student    Student  @relation(fields: [studentId], references: [id])
-
-  courseId   Int
-  course     Course   @relation(fields: [courseId], references: [id])
-
-  semsterId Int
-  semster studentSemester @relation(fields: [semsterId], references: [id])
-
-  
-
-
-  isActive   Boolean   @default(true)
-
-  @@unique([semsterId, courseId, studentId])
-
-
-  
+  id               Int            @id @default(autoincrement())
+  testScore        Float?
+  examScore        Float?
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  courseId         Int
+  course           Course         @relation(fields: [courseId], references: [id])
+  semesterId       Int
+  semester         studentSemester @relation(fields: [semesterId], references: [id])
+  isActive         Boolean        @default(true)
+  @@unique([semesterId, courseId, studentId])
 }
 
 model studentSession {
-  id Int @id @default(autoincrement())
-
-  // dependencies
-  sessionId Int
-  session Session @relation(fields: [sessionId], references: [id])
-  studentId Int
-  student Student @relation(fields: [studentId], references: [id])
-
-  levels studentLevel[]
-
+  id               Int            @id @default(autoincrement())
+  sessionId        Int
+  session          Session        @relation(fields: [sessionId], references: [id])
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  levels           studentLevel[]
   @@unique([sessionId, studentId])
 }
 
 model studentLevel {
-  id Int @id @default(autoincrement())
-  
-
-  // dependencies
-  sessionId Int
-  session studentSession @relation(fields: [sessionId], references: [id])
-
-  levelId Int
-  level Level @relation(fields: [levelId], references: [id])
-
-  studentId Int
-  student Student @relation(fields: [studentId], references: [id])
-
-
-  // relationships
-  payments StudentPayment[]
-  semesters studentSemester[]
-
+  id               Int            @id @default(autoincrement())
+  studentSessionId Int
+  studentSession   studentSession @relation(fields: [studentSessionId], references: [id])
+  levelId          Int
+  level            Level          @relation(fields: [levelId], references: [id])
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  payments         StudentPayment[]
+  semesters        studentSemester[]
   @@unique([levelId, studentId])
 }
 
 model StudentPayment {
-  id         Int      @id @default(autoincrement())
-  status     PaymentStatus @default(NOT_PAID)
-  paymentCode String
-
-
-  // relationships 
-
-  paymentId  Int
-  payment    Payment @relation(fields: [paymentId], references: [id])
-  studentId  Int
-  student    Student @relation(fields: [studentId], references: [id])
-  levelId Int
-  level studentLevel @relation(fields: [levelId], references: [id])
-
- 
-  isActive   Boolean  @default(true)
-
-  @@unique([studentId, paymentId, levelId])
-
+  id               Int            @id @default(autoincrement())
+  status           PaymentStatus  @default(NOT_PAID)
+  paymentCode      String
+  paymentId        Int
+  payment          Payment        @relation(fields: [paymentId], references: [id])
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  studentLevelId   Int
+  studentLevel     studentLevel   @relation(fields: [studentLevelId], references: [id])
+  isActive         Boolean        @default(true)
+  @@unique([studentId, paymentId, studentLevelId])
 }
 
 model studentSemester {
-  id Int @id @default(autoincrement())
-  studentId Int
-  student Student @relation(fields: [studentId], references: [id])
-
-  levelId Int
-  level studentLevel @relation(fields: [levelId], references: [id])
-
-  semesterId Int
-  semester Semester @relation(fields: [semesterId], references: [id])
-
-  registeredStudents StudentCourse[]
-
-  @@unique([studentId, levelId, semesterId])
+  id               Int            @id @default(autoincrement())
+  studentId        Int
+  student          Student        @relation(fields: [studentId], references: [id])
+  studentLevelId   Int
+  studentLevel     studentLevel   @relation(fields: [studentLevelId], references: [id])
+  semesterId       Int
+  semester         Semester       @relation(fields: [semesterId], references: [id])
+  registeredCourses StudentCourse[]
+  @@unique([studentId, studentLevelId, semesterId])
 }
 
 model Admin {
-  id       Int      @id @default(autoincrement())
-  role     UserRole
-  email    String   @unique
-  password String   @default("password")
+  id               Int            @id @default(autoincrement())
+  role             UserRole
+  email            String         @unique
+  password         String         @default("password")
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

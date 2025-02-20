@@ -3,8 +3,8 @@ const prisma = new PrismaClient();
 
 // ✅ Create Student Level (with validation)
 const createStudentLevel = async (req, res) => {
-  const { sessionId, levelId, studentId } = req.body;
-  if (!sessionId || !levelId || !studentId) {
+  const { studentSessionId, levelId, studentId } = req.body;
+  if (!studentSessionId || !levelId || !studentId) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -17,7 +17,7 @@ const createStudentLevel = async (req, res) => {
       where: { id: parseInt(levelId) },
     });
     const sessionExists = await prisma.studentSession.findUnique({
-      where: { id: parseInt(sessionId) },
+      where: { id: parseInt(studentSessionId) },
     });
 
     if (!studentExists)
@@ -32,7 +32,7 @@ const createStudentLevel = async (req, res) => {
       data: {
         levelId: parseInt(levelId),
         studentId: parseInt(studentId),
-        sessionId: parseInt(sessionId),
+        studentSessionId: parseInt(studentSessionId),
       },
     });
 

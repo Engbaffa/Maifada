@@ -15,9 +15,9 @@ const getAll = async (req, res) => {
 };
 
 const createStudentPayment = async (req, res) => {
-  const { paymentCode, paymentId, studentId, levelId } = req.body;
+  const { paymentCode, paymentId, studentId, studentLevelId } = req.body;
 
-  if (!paymentCode || !paymentId || !studentId || !levelId) {
+  if (!paymentCode || !paymentId || !studentId || !studentLevelId) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
@@ -25,17 +25,15 @@ const createStudentPayment = async (req, res) => {
     // Check if the studentLevel (NOT Level) exists
     const studentLevelExists = await prisma.studentLevel.findFirst({
       where: {
-        id: parseInt(levelId), // ✅ Correctly checking against studentLevel.id
+        id: parseInt(studentLevelId), // ✅ Correctly checking against studentLevel.id
         studentId: parseInt(studentId),
       },
     });
 
     if (!studentLevelExists) {
-      return res
-        .status(400)
-        .json({
-          error: "Invalid levelId. Student is not registered in this level.",
-        });
+      return res.status(400).json({
+        error: "Invalid levelId. Student is not registered in this level.",
+      });
     }
 
     // Ensure the payment type exists
@@ -57,7 +55,7 @@ const createStudentPayment = async (req, res) => {
       data: {
         studentId: parseInt(studentId),
         paymentId: parseInt(paymentId),
-        levelId: parseInt(levelId), // ✅ Correctly referencing studentLevel.id
+        studentLevelId: parseInt(studentLevelId), // ✅ Correctly referencing studentLevel.id
         paymentCode: hashedCode,
         status: "PENDING",
       },
@@ -75,10 +73,9 @@ const createStudentPayment = async (req, res) => {
 
 // ✅ Verify Payment
 const paymentVerification = async (req, res) => {
-  const { id } = req.params;
-  const { verifyPayment, paymentId, levelId, studentId } = req.body;
+  const { verifyPayment, paymentId } = req.body;
 
-  if (!verifyPayment || !paymentId || !levelId || !studentId) {
+  if (!verifyPayment || !paymentId) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
@@ -86,9 +83,7 @@ const paymentVerification = async (req, res) => {
     // Find pending payment
     const studentPayment = await prisma.studentPayment.findFirst({
       where: {
-        studentId: parseInt(studentId),
         paymentId: parseInt(paymentId),
-        levelId: parseInt(levelId),
         status: "PENDING",
       },
     });
@@ -149,18 +144,12 @@ const getStudentPaymentById = async (req, res) => {
 
 // ✅ Delete a Student Payment
 const deleteStudentPayment = async (req, res) => {
-  const { paymentId, levelId, studentId } = req.body;
-
-  if (!paymentId || !levelId || !studentId) {
-    return res.status(400).json({ message: "All fields are required." });
-  }
+  const { id } = req.params;
 
   try {
     const deletedPayment = await prisma.studentPayment.deleteMany({
       where: {
-        studentId: parseInt(studentId),
-        levelId: parseInt(levelId),
-        paymentId: parseInt(paymentId),
+        id: parseInt(id),
       },
     });
 
