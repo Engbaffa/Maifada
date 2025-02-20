@@ -1,8 +1,18 @@
 import express from "express";
+import authenticate from "../middleware/jsWebToken.js";
+import authorize from "../middleware/authorize.js";
+
+const superRouter = express.Router();
+
+// Apply authentication and authorization globally to all routes
+superRouter.use(authenticate); // Ensure all routes are authenticated
+superRouter.use(authorize("ADMIN , STUDENT"));
+
 import {
-  registerAdmin,
-  loginAdmin,
-  updatePassword,
+  getAllAdmins,
+  getAdminById,
+  updateAdmin,
+  deleteAdmin,
 } from "../controllers/adminController.js";
 
 import {
@@ -81,14 +91,11 @@ import {
 } from "../controllers/sessionController.js";
 
 import {
-  loginStudent,
-  createStudent,
   getStudentById,
   getStudents,
   deleteStudent,
   restoreStudent,
   updateUtmeScore,
-  updateStudentPassword,
   updateStudent,
   getEverythingStudentsActive,
   getAllStudents,
@@ -153,12 +160,11 @@ import {
   getEverythingStudentSessions,
 } from "../controllers/studentSession.js";
 
-const superRouter = express.Router();
-
 // Admin routes
-superRouter.post("/register", registerAdmin);
-superRouter.post("/login", loginAdmin);
-superRouter.put("/update-password", updatePassword);
+superRouter.put("/admin/:id", updateAdmin);
+superRouter.get("/admins", getAllAdmins);
+superRouter.delete("/admin/:id", deleteAdmin);
+superRouter.get("/admin/:id", getAdminById);
 
 // Course routes
 superRouter.post("/course", createCourse); // ✅
@@ -224,9 +230,7 @@ superRouter.delete("/session/:id", deleteSession); // ✅
 superRouter.get("/allsessions", getEverythingSessions); // ✅
 
 // STUDENT ROUTE
-// superRouter.post("/student-login", loginStudent);
-//superRouter.put("/student/change-password", updateStudentPassword);
-superRouter.post("/student", createStudent); // ✅
+
 superRouter.get("/student/:id", getStudentById); // ✅
 superRouter.get("/students", getStudents); // ✅
 superRouter.delete("/student/:id", deleteStudent); // ✅
