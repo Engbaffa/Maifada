@@ -1,12 +1,9 @@
 import express from "express";
 import authenticate from "../middleware/jsWebToken.js";
-import authorize from "../middleware/authorize.js";
 
 const superRouter = express.Router();
 
-// Apply authentication and authorization globally to all routes
-superRouter.use(authenticate); // Ensure all routes are authenticated
-superRouter.use(authorize("ADMIN , STUDENT"));
+superRouter.use(authenticate);
 
 import {
   getAllAdmins,
