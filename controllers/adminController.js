@@ -75,6 +75,12 @@ const loginAdmin = async (req, res) => {
       SECRET_KEY,
       { expiresIn: "2h" }
     );
+    // Set the token as an HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      // secure: true, // Use only over HTTPS in production
+      sameSite: "strict",
+    });
 
     return res.status(200).json({ message: "Login successful", token });
   } catch (error) {
