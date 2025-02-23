@@ -2,13 +2,16 @@ import express from "express";
 import superRouter from "./routes/super.js";
 import noAuth from "./routes/noauth.js";
 import cors from "cors";
-const PORT = 3000;
+import dotenv from "dotenv";
+const PORT = process.env.PORT;
+dotenv.config();
 
+const clientHost = process.env.CLIENT_URL;
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:5173", // Replace with your frontend URL
-    credentials: true, // Allow credentials (cookies)
+    origin: clientHost,
+    credentials: true,
   })
 );
 app.use(express.json());

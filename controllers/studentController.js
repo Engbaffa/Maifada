@@ -1,15 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
-
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
-
-const SECRET_KEY = "your_secret_key"; // Replace with your actual secret key
+import sendRegistrationEmail from "../middleware/sendRegistrationEmail.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Create a new student
 const createStudent = async (req, res) => {
   const { firstname, lastname, email, gender, address, dateOfBirth } = req.body;
 
+  // Validate input fields
   if (
     !firstname ||
     !lastname ||
@@ -22,6 +24,7 @@ const createStudent = async (req, res) => {
   }
 
   try {
+    // Check if a student with the given email already exists
     const existingStudent = await prisma.student.findUnique({
       where: { email },
     });
@@ -31,7 +34,13 @@ const createStudent = async (req, res) => {
         .status(400)
         .json({ message: "Student with this email already exists" });
     }
-    const hashedPassword = await bcrypt.hash("password", 10);
+
+    // Hash the temporary password
+    const hashedPassword = await bcrypt.hash(process.env.PASSWORD, 10);
+    const resetToken = crypto.randomBytes(20).toString("hex"); // Random token
+    const resetTokenExpiry = new Date(Date.now() + 3600000);
+
+    // Create the student in the database
     const student = await prisma.student.create({
       data: {
         firstname,
@@ -41,21 +50,66 @@ const createStudent = async (req, res) => {
         address,
         dateOfBirth,
         password: hashedPassword,
-        isActive: true, // Ensure the student is active by default
+        isActive: true,
+        resetToken,
+        resetTokenExpiry,
       },
     });
+
+    // Construct the password reset link
+    const resetLink = `${process.env.CLIENT_URL}/student/reset-password?token=${resetToken}`;
+
+    // Send the registration email
+    await sendRegistrationEmail(
+      firstname,
+      email,
+      process.env.PASSWORD,
+      resetLink
+    );
 
     return res
       .status(201)
       .json({ message: "Student created successfully", student });
   } catch (error) {
+    console.error(error);
     return res
       .status(500)
       .json({ message: "Error creating student", error: error.message });
   }
 };
 
-// Get all active students
+const resetPassword = async (req, res) => {
+  const { newPassword } = req.body;
+  const { token } = req.params;
+
+  try {
+    const student = await prisma.student.findUnique({
+      where: { resetToken: token },
+    });
+
+    if (!student || new Date() > new Date(student.resetTokenExpiry)) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.student.update({
+      where: { id: parseInt(id) },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Error updating password", error: error.message });
+  }
+};
 
 const getStudents = async (req, res) => {
   try {
@@ -164,7 +218,7 @@ const loginStudent = async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      SECRET_KEY,
+      process.env.SECRET_KEY,
       { expiresIn: "1h" }
     );
     // Set the token as an HTTP-only cookie
@@ -344,4 +398,5 @@ export {
   restoreStudent,
   updateUtmeScore,
   updateStudent,
+  resetPassword,
 };

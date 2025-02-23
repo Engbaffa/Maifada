@@ -93,7 +93,9 @@ CREATE TABLE "Student" (
     "address" TEXT,
     "utmeScore" DOUBLE PRECISION,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "role" "UserRole" NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'STUDENT',
+    "resetToken" TEXT,
+    "resetTokenExpiry" TIMESTAMP(3),
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
 );
@@ -193,7 +195,7 @@ CREATE TABLE "studentSemester" (
 -- CreateTable
 CREATE TABLE "Admin" (
     "id" SERIAL NOT NULL,
-    "role" "UserRole" NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'ADMIN',
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL DEFAULT 'password',
 

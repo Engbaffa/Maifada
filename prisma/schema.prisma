@@ -128,6 +128,8 @@ model Student {
   previousSchools  PreviousSchool[]
   courses          StudentCourse[]
   payments         StudentPayment[]
+  resetToken       String?
+  resetTokenExpiry DateTime?
 }
 
 model NextOfKin {
