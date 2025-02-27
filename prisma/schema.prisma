@@ -231,6 +231,9 @@ model studentSemester {
 model Admin {
   id               Int            @id @default(autoincrement())
   role             UserRole @default(ADMIN)
+  username String @unique
   email            String         @unique
   password         String         @default("password")
+  resetToken       String?
+  resetTokenExpiry DateTime?
 }

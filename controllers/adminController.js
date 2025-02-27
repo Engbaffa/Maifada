@@ -1,39 +1,52 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import AdminOnboardingMail from "../middleware/adminOnboardingMail.js";
+import dotenv from "dotenv";
+import crypto from "crypto";
+import ChangePasswordMail from "../middleware/changePasswordMail.js";
+dotenv.config();
 
 const prisma = new PrismaClient();
 const SECRET_KEY = "your_secret_key"; // Replace with your actual secret key
 
-/**
- * Create a new admin user
- */
 const registerAdmin = async (req, res) => {
-  const { email } = req.body;
+  const { username, email } = req.body;
 
-  if (!email) {
+  if (!email || !username) {
     return res.status(400).json({
-      message: "All fields are required: email, password, role",
+      message: "All fields are required: email, Username",
     });
   }
 
   try {
     const existingUser = await prisma.admin.findUnique({
-      where: { email },
+      where: { username },
     });
 
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash("password", 10);
+    const hashedPassword = await bcrypt.hash(process.env.PASSWORD, 10);
+    const resetToken = crypto.randomBytes(20).toString("hex"); // Random token
+    const resetTokenExpiry = new Date(Date.now() + 3600000);
+    const toLower = username.toLowerCase();
 
     const newUser = await prisma.admin.create({
       data: {
         email,
+        username: toLower,
         password: hashedPassword,
+        resetToken,
+        resetTokenExpiry,
       },
     });
+
+    const resetLink = `${process.env.CLIENT_URL}/admin/reset-password?token=${resetToken}`;
+
+    // Send the registration email
+    await AdminOnboardingMail(username, email, process.env.PASSWORD, resetLink);
 
     return res
       .status(201)
@@ -45,19 +58,16 @@ const registerAdmin = async (req, res) => {
   }
 };
 
-/**
- * Admin login
- */
 const loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
+  const { username, password } = req.body;
 
-  if (!email || !password) {
+  if (!username || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
     const user = await prisma.admin.findUnique({
-      where: { email },
+      where: { username },
     });
 
     if (!user) {
@@ -71,7 +81,7 @@ const loginAdmin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, username: user.username, role: user.role },
       SECRET_KEY,
       { expiresIn: "2h" }
     );
@@ -228,7 +238,105 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
-// Export all controllers
+const resetAdminPassword = async (req, res) => {
+  const { newPassword } = req.body;
+  const { token } = req.params;
+
+  try {
+    // Validate the new password
+    if (!newPassword || newPassword.trim() === "") {
+      return res.status(400).json({ message: "New password is required" });
+    }
+
+    // Find the admin by resetToken
+    const admin = await prisma.admin.findUnique({
+      where: { resetToken: token },
+    });
+
+    // Check if the admin exists and the token is not expired
+    if (!admin || new Date() > new Date(admin.resetTokenExpiry)) {
+      console.log("Admin:", admin); // Debugging log
+      console.log("Current Time:", new Date());
+      console.log("Token Expiry:", new Date(admin?.resetTokenExpiry));
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // Extract the admin ID
+    const { id } = admin;
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the admin's password and clear the reset token
+    await prisma.admin.update({
+      where: { id: parseInt(id) },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    if (error instanceof prisma.PrismaClientKnownRequestError) {
+      return res
+        .status(500)
+        .json({ message: "Database error", error: error.message });
+    }
+    return res
+      .status(500)
+      .json({ message: "Error updating password", error: error.message });
+  }
+};
+
+const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Username is required" });
+  }
+
+  try {
+    // Find the admin by username
+    const admin = await prisma.admin.findUnique({
+      where: { email },
+    });
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    // Generate a new reset token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // Token expires in 1 hour
+
+    // Update the admin record with the new reset token and expiry
+    await prisma.admin.update({
+      where: { id: admin.id },
+      data: {
+        resetToken,
+        resetTokenExpiry,
+      },
+    });
+
+    // Create the reset link
+    const resetLink = `${process.env.CLIENT_URL}/admin/reset-password?token=${resetToken}`;
+
+    // Send the password reset email
+    await ChangePasswordMail(admin.email, null, resetLink);
+
+    return res
+      .status(200)
+      .json({ message: "Password reset email sent successfully." });
+  } catch (error) {
+    console.error("Error sending password reset email:", error.message);
+    return res.status(500).json({
+      message: "An error occurred while sending the password reset email.",
+    });
+  }
+};
 export {
   registerAdmin,
   loginAdmin,
@@ -236,4 +344,6 @@ export {
   getAdminById,
   updateAdmin,
   deleteAdmin,
+  resetAdminPassword,
+  requestPasswordReset,
 };

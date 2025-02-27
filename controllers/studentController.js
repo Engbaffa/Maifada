@@ -5,6 +5,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import sendRegistrationEmail from "../middleware/sendRegistrationEmail.js";
 import dotenv from "dotenv";
+import ChangePasswordMail from "../middleware/changePasswordMail.js";
 dotenv.config();
 
 // Create a new student
@@ -75,39 +76,6 @@ const createStudent = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error creating student", error: error.message });
-  }
-};
-
-const resetPassword = async (req, res) => {
-  const { newPassword } = req.body;
-  const { token } = req.params;
-
-  try {
-    const student = await prisma.student.findUnique({
-      where: { resetToken: token },
-    });
-
-    if (!student || new Date() > new Date(student.resetTokenExpiry)) {
-      return res.status(400).json({ message: "Invalid or expired token" });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    await prisma.student.update({
-      where: { id: parseInt(id) },
-      data: {
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenExpiry: null,
-      },
-    });
-
-    return res.status(200).json({ message: "Password updated successfully" });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Error updating password", error: error.message });
   }
 };
 
@@ -387,6 +355,104 @@ const updateStudent = async (req, res) => {
   }
 };
 
+const requestPasswordResetStudent = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: "All fields are mandatory" });
+  }
+  try {
+    const studentExists = await prisma.student.findUnique({
+      where: {
+        email,
+      },
+    });
+    if (!studentExists) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetTokenExpiry = new Date(Date.now() + 360000);
+
+    await prisma.student.update({
+      where: { id: studentExists.id },
+      data: {
+        resetToken,
+        resetTokenExpiry,
+      },
+    });
+
+    // Create the reset link
+    const resetLink = `${process.env.CLIENT_URL}/student/new-password?token=${resetToken}`;
+
+    // Send the password reset email
+    await ChangePasswordMail(email, resetLink);
+
+    return res
+      .status(200)
+      .json({ message: "Password reset email sent successfully." });
+  } catch (error) {
+    console.error("Error sending password reset email:", error.message);
+    return res.status(500).json({
+      message: "An error occurred while sending the password reset email.",
+    });
+  }
+};
+const resetStudentPassword = async (req, res) => {
+  const { newPassword } = req.body;
+  const { token } = req.params;
+
+  try {
+    // Validate the new password
+    if (!newPassword || newPassword.trim() === "") {
+      return res.status(400).json({ message: "New password is required" });
+    }
+
+    // Find the student by resetToken
+    console.log("Finding student with token:", token);
+    const student = await prisma.student.findFirst({
+      where: {
+        resetToken: token,
+      },
+    });
+
+    // Check if the student exists and the token is not expired
+    if (!student || new Date() > new Date(student.resetTokenExpiry)) {
+      console.log("Student details:", student);
+      console.log("Current Time:", new Date());
+      console.log("Token Expiry:", new Date(student.resetTokenExpiry));
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // Extract the student ID
+    const studentId = student.id;
+    if (!studentId) {
+      return res.status(400).json({ message: "Student ID is required" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the student's password
+    const updatedPassword = await prisma.student.update({
+      where: { id: studentId },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    if (!updatedPassword) {
+      return res.status(400).json({ message: "Password not updated" });
+    }
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    return res
+      .status(500)
+      .json({ message: "Error updating password", error: error.message });
+  }
+};
 export {
   createStudent,
   getStudents,
@@ -398,5 +464,6 @@ export {
   restoreStudent,
   updateUtmeScore,
   updateStudent,
-  resetPassword,
+  resetStudentPassword,
+  requestPasswordResetStudent,
 };

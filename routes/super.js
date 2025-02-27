@@ -157,6 +157,14 @@ import {
   getEverythingStudentSessions,
 } from "../controllers/studentSession.js";
 
+import {
+  createUpdate,
+  getAllUpdates,
+  getUpdateById,
+  deleteUpdate,
+  editUpdate,
+} from "../controllers/updatesController.js";
+
 // Admin routes
 superRouter.put("/admin/:id", updateAdmin);
 superRouter.get("/admins", getAllAdmins);
@@ -197,7 +205,6 @@ superRouter.get("/allpayments", getEverythingPayments); // ✅
 // Program routes
 
 superRouter.post("/program", createProgram); // ✅
-superRouter.get("/programs", getPrograms); // ✅
 superRouter.get("/program/:id", getProgramById); // ✅
 superRouter.put("/program/:id", updateProgram); // ✅
 superRouter.delete("/program/:id", deleteProgram); // ✅
@@ -284,5 +291,9 @@ superRouter.put("/studentsession/:id", updateStudentSessions);
 superRouter.delete("/studentsession/:id", deleteStudentSessions);
 superRouter.get("/studentsessions", getAllStudentSessions);
 superRouter.get("/allstudentsessions", getEverythingStudentSessions);
+
+/* 
+createUpdate, getAllUpdates, getUpdateById, deleteUpdate, editUpdate
+*/
 
 export default superRouter;

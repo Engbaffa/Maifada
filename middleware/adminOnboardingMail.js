@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 // Load environment variables
 dotenv.config();
 
-const sendRegistrationEmail = async (firstname, email, password, resetLink) => {
+const AdminOnboardingMail = async (username, email, password, resetLink) => {
   // Create a transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || "Gmail", // Use your email service provider
@@ -64,8 +64,8 @@ const sendRegistrationEmail = async (firstname, email, password, resetLink) => {
       </head>
       <body>
         <div class="container">
-          <h1>Hello ${firstname},</h1>
-          <p>Congratulations! Your account has been successfully created.</p>
+          <h1>Hello ${username},</h1>
+          <p>Congratulations! You've been added as admin created.</p>
           <p><strong>Your temporary password:</strong> ${password}</p>
           <p>Please click the button below to change your password:</p>
           <a href="${resetLink}" class="button">Change Password</a>
@@ -85,4 +85,4 @@ const sendRegistrationEmail = async (firstname, email, password, resetLink) => {
   }
 };
 
-export default sendRegistrationEmail;
+export default AdminOnboardingMail;
